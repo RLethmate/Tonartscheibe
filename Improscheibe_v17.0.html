@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<!-- Version: v0.18.0 (2025-12-04) -->
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Improvisations-Helfer V18 (Matrix Fix)</title>
+    <title>Improvisations-Helfer V17 (Guitar Voicings)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
 
@@ -148,6 +147,8 @@
         const colorsMajor = { tonic: "#C1E1C1", subdom: "#FDFD96", dom: "#FFB7B2", minor: "#B5EAD7", dim: "#D3D3D3" };
         const colorsMinor = { tonic: "#4682B4", tonicParallel: "#89CFF0", subdom: "#87CEEB", subdomParallel: "#B0E0E6", dom: "#5A9BD4", dim: "#B0C4DE" };
 
+        // interval: Immer relativ zur physikalischen I (Dur Root)
+        // ivs: Standard Piano Intervals (Cluster)
         const wheelPositions = [
             { index: 0, 
               major: { roman: "I", desc: "Zuhause. Der Ruhepol.", emoji: "🏠", image: "haus.png", color: colorsMajor.tonic, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
@@ -177,15 +178,13 @@
               minor: { roman: "ii°", desc: "Vorbereiter der Spannung.", emoji: "⚡", image: "klippe.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
         ];
 
-        // --- STATISTIK & MATRIX V4 (Fixed Weights for Focus Mode) ---
-        // Jede Stufe hat nun mindestens einen Pfeil mit Weight 3
         const probabilityMap = {
             major: {
                 pop: {
                     "I":  [["V", 3], ["IV", 3], ["VI", 2], ["II", 1], ["III", 1]],
                     "II": [["V", 3], ["IV", 2], ["I", 1], ["III", 1], ["VI", 1]],
                     "III":[["VI", 3], ["IV", 2], ["I", 1], ["V", 1]],
-                    "IV": [["I", 3], ["V", 3], ["II", 1], ["VI", 1]], // IV -> V ist jetzt 3 (Pop)
+                    "IV": [["I", 3], ["V", 2], ["II", 1], ["VI", 1]],
                     "V":  [["I", 3], ["VI", 2], ["IV", 2], ["III", 1], ["II", 1]], 
                     "VI": [["IV", 3], ["V", 2], ["II", 2], ["III", 1]],
                     "VII":[["I", 3], ["III", 2], ["VI", 1]]  
@@ -194,10 +193,10 @@
                     "I":  [["VI", 3], ["IV", 2], ["II", 2], ["III", 1]],
                     "II": [["V", 3], ["bII", 1]],
                     "III":[["VI", 3], ["IV", 1], ["bIII", 1]],
-                    "IV": [["I", 3], ["VII", 1], ["IVm", 1]], // IV->I gestärkt
+                    "IV": [["I", 2], ["VII", 1], ["IVm", 1], ["I", 3]],
                     "V":  [["I", 3], ["VI", 1], ["III", 1]], 
                     "VI": [["II", 3], ["V", 1]],
-                    "VII":[["III", 3], ["I", 1]] 
+                    "VII":[["III", 3], ["I", 1]]
                 }
             },
             minor: {
@@ -211,7 +210,7 @@
                     "ii°":[["V", 3], ["i", 1]]
                 },
                 jazz: {
-                    "i":  [["iv", 3], ["bVI", 2], ["ii°", 1]], 
+                    "i":  [["iv", 2], ["bVI", 2], ["ii°", 1], ["V", 3]], 
                     "ii°":[["V", 3]],
                     "V":  [["i", 3]], 
                     "iv": [["bVII", 2], ["V", 1], ["i", 3]],
@@ -373,7 +372,6 @@
             targets.forEach(target => {
                 const targetRoman = target[0];
                 const weight = target[1]; 
-                
                 if (complexity === 1 && weight < 3) return;
                 if (complexity === 2 && weight < 2) return;
 
@@ -397,18 +395,35 @@
             });
         }
 
-        // --- GUITAR VOICING LOGIK ---
+        // --- GUITAR VOICING LOGIK (Neu in V17) ---
+        // Returns offsets relative to root for specific chord types
+        // Simuliert "Wide/Open Voicings"
         function getGuitarVoicing(chordType, roman, style) {
+            // roman und style können genutzt werden für Nuancen
             switch(chordType) {
+                // DUR (Triad) - E-Shape artig: Root, 5, 8va, 3, 5
                 case "Dur": return [0, 7, 12, 16, 19];
+                
+                // MOLL (Triad) - Em-Shape: Root, 5, 8va, b3, 5
                 case "Moll": return [0, 7, 12, 15, 19];
+                
+                // Maj7 (Shell Voicing + Color): Root, 7, 3, 5
                 case "maj7": return [0, 11, 16, 19];
+                
+                // m7: Root, b7, b3, 5
                 case "m7": return [0, 10, 15, 19];
+                
+                // Dom7: Root, 5, b7, 3
                 case "7": return [0, 7, 10, 16]; 
-                case "7(b9)": return [0, 7, 10, 13, 16]; 
+                case "7(b9)": return [0, 7, 10, 13, 16]; // Mit b9 (Intervall 13)
+                
+                // m7b5 (Half Dim): Root, b7, b3, b5
                 case "m7b5": return [0, 10, 15, 18];
+                
+                // Vermindert (Dim): Root, bb7(6), b3, b5
                 case "Verm.": return [0, 9, 15, 18]; 
-                default: return [0, 4, 7]; 
+                
+                default: return [0, 4, 7]; // Fallback
             }
         }
 
@@ -466,6 +481,8 @@
             }
             
             const chordRootFreq = rootFreq * Math.pow(2, semitoneOffset / 12);
+            
+            // HIER DIE ENTSCHEIDUNG: Piano Cluster vs. Guitar Wide Voicing
             const chordLabel = isJazz ? modeData.jazz.label : modeData.pop.label;
             let intervals;
 
@@ -479,6 +496,7 @@
 
             intervals.forEach((interval, i) => {
                 const toneFreq = chordRootFreq * Math.pow(2, interval / 12);
+                // Strumming Delay größer bei Gitarre
                 const strumDelay = isGuitar ? 0.06 : 0.03; 
                 playTone(toneFreq, isGuitar ? 'guitar' : 'piano', now + (i * strumDelay));
             });
