@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvisations-Helfer</title>
+    <style>
+        /* --- GRUNDLAGEN --- */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #e0e0e0;
+            overflow: hidden; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1 { margin-bottom: 20px; color: #333; font-size: 1.5rem; text-align: center;}
+
+        .wheel-container {
+            position: relative;
+            width: 380px; 
+            height: 380px;
+        }
+
+        /* --- SCHEIBEN --- */
+        .disc {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Äußere Scheibe */
+        .outer-disc {
+            width: 380px;
+            height: 380px;
+            background-color: #fff;
+            z-index: 1;
+            border: 1px solid #999;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Innere Scheibe */
+        .inner-disc {
+            width: 240px; 
+            height: 240px;
+            background-color: #222; 
+            color: #fff;
+            z-index: 2;
+            border: 2px solid #fff;
+        }
+
+        /* --- SEGMENTE --- */
+        .segment {
+            position: absolute;
+            width: 60px; 
+            height: 50%; 
+            top: 0;
+            left: 50%; 
+            margin-left: -30px; 
+            transform-origin: bottom center; 
+            pointer-events: none; 
+        }
+
+        /* --- POSITIONIERUNG (Hier angepasst!) --- */
+        
+        .counter-rotator {
+            position: absolute;
+            width: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* NOTEN (Außen) */
+        .pos-note {
+            top: 15px; 
+            height: 40px;
+        }
+        .note-text {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* RÖMISCHE ZAHLEN (Innen - Zone B) */
+        .pos-roman {
+            top: 12px; /* Etwas Platz zum weißen Rand */
+            height: 25px;
+        }
+        .roman-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* ICONS (Innen - Zone C) */
+        .pos-icon {
+            /* VORHER: 55px -> NACHHER: 38px */
+            /* Zieht das Icon viel näher an die römische Zahl */
+            top: 38px; 
+            height: 45px;
+        }
+
+        .icon-img {
+            max-width: 40px; 
+            max-height: 40px;
+            width: auto;
+            height: auto;
+            object-fit: contain; 
+            display: block;
+        }
+
+        .emoji-fallback { font-size: 1.8rem; }
+
+        /* --- MARKIERUNG --- */
+        .marker {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 0; height: 0; 
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 25px solid #d32f2f;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        /* --- STEUERUNG --- */
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        button:active { transform: scale(0.95); }
+
+    </style>
+</head>
+<body>
+
+    <h1>Harmonie-Rad</h1>
+
+    <div class="wheel-container">
+        <div class="marker"></div>
+        <div class="disc outer-disc" id="outerWheel"></div>
+        <div class="disc inner-disc" id="innerWheel"></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="rotate(-1)">⬅️</button>
+        <button onclick="rotate(1)">➡️</button>
+    </div>
+
+    <script>
+        const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"];
+        
+        const functions = [
+            { roman: "I",   emoji: "🏠", image: "haus.png" }, 
+            null,
+            { roman: "II",  emoji: "🌉", image: "bruecke.png" }, 
+            null,
+            { roman: "III", emoji: "",   image: "" }, 
+            { roman: "IV",  emoji: "⛰️", image: "berg_klein.png" }, 
+            null,
+            { roman: "V",   emoji: "🌋", image: "berg_gross.png" }, 
+            null,
+            { roman: "VI",  emoji: "🌉", image: "bruecke.png" }, 
+            null,
+            { roman: "VII", emoji: "°",  image: "" }  
+        ];
+
+        const outerWheel = document.getElementById('outerWheel');
+        const innerWheel = document.getElementById('innerWheel');
+        const counterRotatingElements = [];
+        let currentStep = 0; 
+
+        notes.forEach((note, index) => {
+            const segment = document.createElement('div');
+            segment.className = 'segment';
+            segment.style.transform = `rotate(${index * 30}deg)`;
+            
+            const wrapper = document.createElement('div');
+            wrapper.className = 'counter-rotator pos-note';
+            
+            const span = document.createElement('span');
+            span.className = 'note-text';
+            span.innerText = note;
+            
+            wrapper.appendChild(span);
+            segment.appendChild(wrapper);
+            outerWheel.appendChild(segment);
+            
+            counterRotatingElements.push({
+                element: wrapper,
+                baseAngle: index * 30 
+            });
+        });
+
+        functions.forEach((func, index) => {
+            if (func) {
+                const segment = document.createElement('div');
+                segment.className = 'segment';
+                segment.style.transform = `rotate(${index * 30}deg)`;
+
+                const romanWrapper = document.createElement('div');
+                romanWrapper.className = 'counter-rotator pos-roman';
+                romanWrapper.innerHTML = `<span class="roman-text">${func.roman}</span>`;
+                segment.appendChild(romanWrapper);
+                
+                counterRotatingElements.push({ element: romanWrapper, baseAngle: index * 30 });
+
+                if (func.image || func.emoji) {
+                    const iconWrapper = document.createElement('div');
+                    iconWrapper.className = 'counter-rotator pos-icon';
+                    let iconHtml = '';
+                    if (func.image) {
+                        iconHtml = `<img src="${func.image}" class="icon-img" alt="${func.roman}">`;
+                    } else if (func.emoji) {
+                        iconHtml = `<span class="emoji-fallback">${func.emoji}</span>`;
+                    }
+                    iconWrapper.innerHTML = iconHtml;
+                    segment.appendChild(iconWrapper);
+                    counterRotatingElements.push({ element: iconWrapper, baseAngle: index * 30 });
+                }
+                innerWheel.appendChild(segment);
+            }
+        });
+
+        function rotate(direction) {
+            currentStep += direction;
+            updateView();
+        }
+
+        function updateView() {
+            const angle = currentStep * 30;
+            outerWheel.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+            
+            counterRotatingElements.forEach(item => {
+                const isOuter = item.element.closest('.outer-disc');
+                if (isOuter) {
+                     const counterRotation = -item.baseAngle - angle;
+                     item.element.style.transform = `rotate(${counterRotation}deg)`;
+                } else {
+                    item.element.style.transform = `rotate(${-item.baseAngle}deg)`;
+                }
+            });
+        }
+
+        innerWheel.style.transform = `translate(-50%, -50%)`;
+        updateView(); 
+    </script>
+</body>
+</html>

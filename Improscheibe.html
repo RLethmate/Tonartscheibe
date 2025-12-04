@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvisations-Helfer</title>
+    <style>
+        /* --- LAYOUT & RESET --- */
+        * {
+            box-sizing: border-box; /* WICHTIG: Verhindert, dass Ränder die Größe verfälschen (gegen das Eiern) */
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #e0e0e0;
+            overflow: hidden; /* Kein Scrollen */
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1 { margin-bottom: 20px; color: #333; font-size: 1.5rem; text-align: center;}
+
+        /* --- ZENTRALER CONTAINER --- */
+        .wheel-container {
+            position: relative;
+            width: 360px;
+            height: 360px;
+            /* Hier wird alles gesammelt */
+        }
+
+        /* --- SCHEIBEN --- */
+        .disc {
+            position: absolute;
+            border-radius: 50%;
+            /* Perfekte Zentrierung: */
+            top: 50%;
+            left: 50%;
+            /* transform wird später per JS gesetzt, aber der Startpunkt ist -50%, -50% */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Äußere Scheibe */
+        .outer-disc {
+            width: 360px;
+            height: 360px;
+            background-color: #fff;
+            z-index: 1;
+            border: 2px solid #333;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        /* Innere Scheibe */
+        .inner-disc {
+            width: 230px;
+            height: 230px;
+            background-color: #222; /* Dunkler Hintergrund für Kontrast */
+            color: #fff;
+            z-index: 2;
+            border: 4px solid #fff;
+        }
+
+        /* --- SEGMENTE (Tortenstücke) --- */
+        .segment {
+            position: absolute;
+            width: 60px; /* Breit genug für Text */
+            height: 50%; /* Radius */
+            top: 0;
+            left: 50%; 
+            margin-left: -30px; /* Hälfte der Breite zum Zentrieren */
+            transform-origin: bottom center; /* Drehpunkt ist die Mitte der Scheibe */
+            pointer-events: none; /* Klicks gehen durch */
+        }
+
+        /* --- INHALT (Text/Bild) --- */
+        /* Wir nutzen einen Container im Segment, um den Text zurückzudrehen */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px; /* Abstand vom Rand */
+            height: 60px;
+            /* WICHTIG: Transition für die Gegen-Rotation */
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .inner-disc .content-wrapper {
+            margin-top: 10px;
+        }
+
+        /* Styling der Texte */
+        .note-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .roman-text {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+
+        /* Platz für dein Bild */
+        .icon-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            display: block;
+            margin-bottom: 2px;
+        }
+
+        /* Falls kein Bild da ist, nutzen wir Emojis als Fallback */
+        .emoji-fallback {
+            font-size: 1.8rem;
+            line-height: 1;
+        }
+
+        /* --- MARKIERUNG --- */
+        .marker {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            /* Roter Pfeil mit CSS gebaut */
+            width: 0; height: 0; 
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #d32f2f;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        /* --- BUTTONS --- */
+        .controls {
+            margin-top: 40px;
+            display: flex;
+            gap: 20px;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        button:active { transform: scale(0.95); }
+
+    </style>
+</head>
+<body>
+
+    <h1>Harmonie-Rad</h1>
+
+    <div class="wheel-container">
+        <div class="marker"></div>
+        <div class="disc outer-disc" id="outerWheel"></div>
+        <div class="disc inner-disc" id="innerWheel"></div>
+    </div>
+
+    <div class="controls">
+        <button onclick="rotate(-1)">⬅️</button>
+        <button onclick="rotate(1)">➡️</button>
+    </div>
+
+    <script>
+        // --- KONFIGURATION ---
+        
+        const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"];
+        
+        // Hier kannst du später deine Dateinamen eintragen (z.B. image: 'haus.png')
+        // Wenn 'image' leer ist, wird 'emoji' genutzt.
+        const functions = [
+            { roman: "I",   emoji: "🏠", image: "" }, 
+            null,
+            { roman: "II",  emoji: "🌉", image: "" }, 
+            null,
+            { roman: "III", emoji: "",   image: "" }, 
+            { roman: "IV",  emoji: "⛰️", image: "" }, 
+            null,
+            { roman: "V",   emoji: "🌋", image: "" }, 
+            null,
+            { roman: "VI",  emoji: "🌉", image: "" }, 
+            null,
+            { roman: "VII", emoji: "°",  image: "" }  
+        ];
+
+        // --- SETUP ---
+        const outerWheel = document.getElementById('outerWheel');
+        const innerWheel = document.getElementById('innerWheel');
+        
+        // Wir speichern Referenzen zu den Text-Elementen, um sie zu drehen
+        const outerTexts = [];
+        const innerTexts = [];
+
+        let currentStep = 0; // Schritte (0 bis 11)
+
+        // 1. Äußere Scheibe erstellen
+        notes.forEach((note, index) => {
+            const segment = document.createElement('div');
+            segment.className = 'segment';
+            segment.style.transform = `rotate(${index * 30}deg)`;
+            
+            // Wrapper für den Inhalt (wird gegengedreht)
+            const wrapper = document.createElement('div');
+            wrapper.className = 'content-wrapper';
+            
+            const span = document.createElement('span');
+            span.className = 'note-text';
+            span.innerText = note;
+            
+            wrapper.appendChild(span);
+            segment.appendChild(wrapper);
+            outerWheel.appendChild(segment);
+            
+            // Speichern für Animation
+            outerTexts.push({
+                element: wrapper,
+                baseAngle: index * 30 // Der Winkel, an dem das Segment fixiert ist
+            });
+        });
+
+        // 2. Innere Scheibe erstellen
+        functions.forEach((func, index) => {
+            if (func) {
+                const segment = document.createElement('div');
+                segment.className = 'segment';
+                segment.style.transform = `rotate(${index * 30}deg)`;
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'content-wrapper';
+
+                // Logik: Bild oder Emoji?
+                let iconHtml = '';
+                if (func.image) {
+                    // Falls du Bilder hast:
+                    iconHtml = `<img src="${func.image}" class="icon-img" alt="${func.roman}">`;
+                } else if (func.emoji) {
+                    // Fallback Emoji
+                    iconHtml = `<span class="emoji-fallback">${func.emoji}</span>`;
+                }
+
+                wrapper.innerHTML = `
+                    ${iconHtml}
+                    <span class="roman-text">${func.roman}</span>
+                `;
+
+                segment.appendChild(wrapper);
+                innerWheel.appendChild(segment);
+
+                // Speichern für statische Gegen-Rotation
+                innerTexts.push({
+                    element: wrapper,
+                    baseAngle: index * 30
+                });
+            }
+        });
+
+        // --- LOGIK ---
+
+        function rotate(direction) {
+            currentStep += direction;
+            updateView();
+        }
+
+        function updateView() {
+            const angle = currentStep * 30;
+
+            // 1. Scheibe drehen
+            // WICHTIG: translate(-50%, -50%) muss erhalten bleiben für die Zentrierung!
+            outerWheel.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+
+            // 2. ÄUSSERE TEXTE anpassen ("Riesenrad-Effekt")
+            // Damit der Text vertikal bleibt, müssen wir ihn um:
+            // - (Basis-Winkel des Segments) MINUS (Aktueller Drehwinkel der Scheibe) drehen.
+            outerTexts.forEach(item => {
+                const counterRotation = -item.baseAngle - angle;
+                item.element.style.transform = `rotate(${counterRotation}deg)`;
+            });
+        }
+
+        // --- INIT ---
+        // Einmal aufrufen, damit die statische innere Scheibe ausgerichtet wird
+        function initInnerDisc() {
+             // Die innere Scheibe dreht sich nie, aber die Segmente sind gedreht.
+             // Wir müssen den Inhalt einmalig zurückdrehen, damit er gerade steht.
+             innerTexts.forEach(item => {
+                 item.element.style.transform = `rotate(${-item.baseAngle}deg)`;
+             });
+        }
+
+        // Zentrierung der inneren Scheibe initial setzen
+        innerWheel.style.transform = `translate(-50%, -50%)`;
+
+        initInnerDisc();
+        updateView(); // Erster Aufruf für äußere Scheibe
+
+    </script>
+</body>
+</html>

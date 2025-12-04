@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Improvisations-Helfer V3</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- GRUNDLAGEN --- */
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Patrick Hand', cursive; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f1ea; 
+            overflow: hidden; 
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        h1 { margin-bottom: 5px; color: #333; font-size: 2rem; }
+        
+        /* --- SETTINGS PANEL (NEU) --- */
+        .settings-panel {
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            border: 1px solid #ccc;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            color: #555;
+        }
+
+        /* Styling für Checkboxen als Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 22px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #333; }
+        input:checked + .slider:before { transform: translateX(18px); }
+
+        /* --- WHEEL CONTAINER --- */
+        .wheel-container {
+            position: relative;
+            width: 380px; 
+            height: 380px;
+        }
+
+        /* --- SCHEIBEN --- */
+        .disc {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .outer-disc {
+            width: 380px;
+            height: 380px;
+            background-color: #fff;
+            z-index: 1;
+            border: 2px solid #333;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .inner-disc {
+            width: 240px; 
+            height: 240px;
+            background-color: #2b2b2b; 
+            color: #fff;
+            z-index: 2;
+            border: 3px solid #fff;
+            pointer-events: auto; 
+        }
+
+        .center-hub {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px; 
+            height: 70px;
+            background-color: #fff;
+            border-radius: 50%;
+            z-index: 5;
+            border: 3px solid #333;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        .center-label { font-size: 0.9rem; color: #666; line-height: 1; }
+        .center-key { font-size: 1.8rem; font-weight: bold; color: #d32f2f; line-height: 1; margin-top: 2px;}
+
+        /* --- SEGMENTE --- */
+        .segment {
+            position: absolute;
+            width: 60px; 
+            height: 50%; 
+            top: 0;
+            left: 50%; 
+            margin-left: -30px; 
+            transform-origin: bottom center; 
+            pointer-events: auto; 
+            cursor: pointer;
+        }
+
+        .counter-rotator {
+            position: absolute;
+            width: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+            pointer-events: none; 
+        }
+
+        .pos-note { top: 10px; height: 40px; }
+        .note-text { font-size: 1.8rem; font-weight: bold; color: #333; }
+
+        .pos-roman { top: 8px; height: 35px; flex-direction: column; }
+        .roman-text { font-size: 1.3rem; font-weight: bold; line-height: 1; }
+        .quality-text { font-size: 0.9rem; opacity: 0.8; margin-top: -2px; transition: opacity 0.3s; }
+
+        .pos-icon { top: 45px; height: 45px; } 
+        
+        .icon-img {
+            max-width: 40px; max-height: 40px;
+            width: auto; height: auto;
+            object-fit: contain; display: block;
+        }
+        .emoji-fallback { font-size: 1.8rem; }
+
+        .marker {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            width: 0; height: 0; 
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 25px solid #d32f2f;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+        }
+        button {
+            padding: 10px 30px;
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.5rem;
+            cursor: pointer;
+            background-color: #333;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        button:active { transform: scale(0.95); }
+
+    </style>
+</head>
+<body>
+
+    <h1>Harmonie-Rad</h1>
+
+    <div class="settings-panel">
+        <div class="toggle-group">
+            <span>Pop (3)</span>
+            <label class="switch">
+                <input type="checkbox" id="jazzToggle" onchange="updateChordLabels()">
+                <span class="slider"></span>
+            </label>
+            <span>Jazz (4)</span>
+        </div>
+        <div class="toggle-group" style="margin-left: 15px; border-left: 1px solid #ddd; padding-left: 15px;">
+            <span>🎹</span>
+            <label class="switch">
+                <input type="checkbox" id="guitarToggle">
+                <span class="slider"></span>
+            </label>
+            <span>🎸</span>
+        </div>
+    </div>
+
+    <div class="wheel-container">
+        <div class="marker"></div>
+        <div class="disc outer-disc" id="outerWheel"></div>
+        <div class="disc inner-disc" id="innerWheel"></div>
+        <div class="center-hub">
+            <span class="center-label">Tonart</span>
+            <span class="center-key" id="keyDisplay">C</span>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="rotate(-1)">⬅️</button>
+        <button onclick="rotate(1)">➡️</button>
+    </div>
+
+    <script>
+        // --- DATEN ---
+        const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"];
+        
+        const colors = {
+            tonic: "#C1E1C1", subdom: "#FDFD96", dom: "#FFB7B2", minor: "#B5EAD7", dim: "#D3D3D3"
+        };
+
+        // Erweiterte Datenstruktur für Pop vs Jazz
+        // interval: Halbtonschritte relativ zur I
+        // jazzInt: Intervalle im Akkord (0,4,7,11) für 4-Klang
+        // popInt: Intervalle im Akkord (0,4,7) für 3-Klang
+        const functions = [
+            { 
+                roman: "I", color: colors.tonic, emoji: "🏠", image: "haus.png", interval: 0,
+                jazz: { label: "maj7", ivs: [0, 4, 7, 11] },
+                pop:  { label: "Dur",  ivs: [0, 4, 7] }
+            }, 
+            null,
+            { 
+                roman: "II", color: colors.minor, emoji: "🌉", image: "bruecke.png", interval: 2,
+                jazz: { label: "m7", ivs: [0, 3, 7, 10] },
+                pop:  { label: "Moll", ivs: [0, 3, 7] }
+            }, 
+            null,
+            { 
+                roman: "III", color: colors.minor, emoji: "", image: "", interval: 4,
+                jazz: { label: "m7", ivs: [0, 3, 7, 10] },
+                pop:  { label: "Moll", ivs: [0, 3, 7] }
+            }, 
+            { 
+                roman: "IV", color: colors.subdom, emoji: "⛰️", image: "berg_klein.png", interval: 5,
+                jazz: { label: "maj7", ivs: [0, 4, 7, 11] },
+                pop:  { label: "Dur",  ivs: [0, 4, 7] }
+            }, 
+            null,
+            { 
+                roman: "V", color: colors.dom, emoji: "🌋", image: "berg_gross.png", interval: 7,
+                jazz: { label: "7",   ivs: [0, 4, 7, 10] },
+                pop:  { label: "Dur", ivs: [0, 4, 7] }
+            }, 
+            null,
+            { 
+                roman: "VI", color: colors.minor, emoji: "🌉", image: "bruecke.png", interval: 9,
+                jazz: { label: "m7", ivs: [0, 3, 7, 10] },
+                pop:  { label: "Moll", ivs: [0, 3, 7] }
+            }, 
+            null,
+            { 
+                roman: "VII", color: colors.dim, emoji: "°", image: "", interval: 11,
+                jazz: { label: "m7b5", ivs: [0, 3, 6, 10] },
+                pop:  { label: "Verm.", ivs: [0, 3, 6] }
+            }  
+        ];
+
+        // --- DOM ---
+        const outerWheel = document.getElementById('outerWheel');
+        const innerWheel = document.getElementById('innerWheel');
+        const keyDisplay = document.getElementById('keyDisplay');
+        const jazzToggle = document.getElementById('jazzToggle');
+        const guitarToggle = document.getElementById('guitarToggle');
+        
+        const counterRotatingElements = [];
+        // Wir speichern Referenzen auf die Quality-Labels, um sie live zu ändern
+        const qualityLabels = []; 
+
+        let currentStep = 0; 
+
+        // --- INIT ---
+
+        // 1. Äußere Scheibe
+        notes.forEach((note, index) => {
+            const segment = document.createElement('div');
+            segment.className = 'segment';
+            segment.style.transform = `rotate(${index * 30}deg)`;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'counter-rotator pos-note';
+            wrapper.innerHTML = `<span class="note-text">${note}</span>`;
+            segment.appendChild(wrapper);
+            outerWheel.appendChild(segment);
+            counterRotatingElements.push({ element: wrapper, baseAngle: index * 30 });
+        });
+
+        // 2. Innere Scheibe
+        functions.forEach((func, index) => {
+            if (func) {
+                const segment = document.createElement('div');
+                segment.className = 'segment';
+                segment.style.transform = `rotate(${index * 30}deg)`;
+                
+                segment.addEventListener('click', () => {
+                    playChordForSegment(func);
+                });
+
+                // Römische Zahl & Label
+                const romanWrapper = document.createElement('div');
+                romanWrapper.className = 'counter-rotator pos-roman';
+                
+                // Wir erstellen ein leeres Span für die Quality, die wir später füllen
+                const labelSpan = document.createElement('span');
+                labelSpan.className = 'quality-text';
+                labelSpan.style.color = func.color;
+                
+                // Referenz speichern (mit Index verknüpft, um Daten zu finden)
+                qualityLabels.push({ span: labelSpan, data: func });
+
+                romanWrapper.innerHTML = `<span class="roman-text" style="color:${func.color}">${func.roman}</span>`;
+                romanWrapper.appendChild(labelSpan);
+                
+                segment.appendChild(romanWrapper);
+                counterRotatingElements.push({ element: romanWrapper, baseAngle: index * 30 });
+
+                // Icons
+                if (func.image || func.emoji) {
+                    const iconWrapper = document.createElement('div');
+                    iconWrapper.className = 'counter-rotator pos-icon';
+                    let iconHtml = func.image 
+                        ? `<img src="${func.image}" class="icon-img" alt="${func.roman}">` 
+                        : `<span class="emoji-fallback">${func.emoji}</span>`;
+                    iconWrapper.innerHTML = iconHtml;
+                    segment.appendChild(iconWrapper);
+                    counterRotatingElements.push({ element: iconWrapper, baseAngle: index * 30 });
+                }
+                innerWheel.appendChild(segment);
+            }
+        });
+
+        // --- UI LOGIK ---
+        
+        function updateChordLabels() {
+            const isJazz = jazzToggle.checked;
+            
+            qualityLabels.forEach(item => {
+                // Wähle Label basierend auf Toggle
+                const text = isJazz ? item.data.jazz.label : item.data.pop.label;
+                item.span.innerText = text;
+            });
+        }
+
+        // --- AUDIO ENGINE (Synthesizer) ---
+        let audioCtx;
+        const noteFrequencies = {
+            "C": 261.63, "C#": 277.18, "D": 293.66, "D#": 311.13, "E": 329.63, "F": 349.23,
+            "F#": 369.99, "G": 392.00, "G#": 415.30, "A": 440.00, "A#": 466.16, "H": 493.88
+        };
+
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        // E-Piano Sound (Triangle/Sine Mix)
+        function playPianoTone(freq, startTime) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            
+            osc.type = 'triangle'; 
+            osc.frequency.value = freq;
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            osc.start(startTime);
+            
+            // Envelope: Attack, Sustain, Decay
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.2, startTime + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 1.5);
+            
+            osc.stop(startTime + 1.5);
+        }
+
+        // Gitarren-Simulation (Plucked String Synthese)
+        function playGuitarTone(freq, startTime) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            // Sawtooth hat mehr Obertöne (wie eine Saite)
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+
+            // Tiefpass-Filter simuliert das Abdämpfen der Obertöne nach dem Zupfen
+            filter.type = "lowpass";
+            filter.frequency.value = 2000; // Start hell
+
+            // Verkettung: Osc -> Filter -> Gain -> Output
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start(startTime);
+
+            // 1. Lautstärke Envelope (Schneller Attack, langes Ausklingen)
+            gain.gain.setValueAtTime(0, startTime);
+            gain.gain.linearRampToValueAtTime(0.25, startTime + 0.02); // Pluck!
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + 2.0); // Lange klingend
+
+            // 2. Filter Envelope (Der Ton wird dumpfer beim Ausklingen)
+            filter.frequency.setValueAtTime(3000, startTime);
+            filter.frequency.exponentialRampToValueAtTime(500, startTime + 0.5);
+
+            osc.stop(startTime + 2.0);
+        }
+
+        function playChordForSegment(funcData) {
+            initAudio(); 
+
+            const isJazz = jazzToggle.checked;
+            const isGuitar = guitarToggle.checked;
+
+            // 1. Grundton finden
+            let indexAtTop = (0 - currentStep) % 12;
+            if (indexAtTop < 0) indexAtTop += 12;
+            const rootNoteName = notes[indexAtTop];
+            const rootFreq = noteFrequencies[rootNoteName];
+
+            // 2. Transposition (Interval zur I)
+            let semitoneOffset = funcData.interval;
+            if (funcData.roman === "VI" || funcData.roman === "VII") {
+                semitoneOffset -= 12; // Tieferlegen
+            }
+            const baseFreq = rootFreq * Math.pow(2, semitoneOffset / 12);
+
+            // 3. Akkord-Intervalle wählen (Pop oder Jazz)
+            const intervals = isJazz ? funcData.jazz.ivs : funcData.pop.ivs;
+
+            // 4. Abspielen
+            const now = audioCtx.currentTime;
+            
+            intervals.forEach((interval, i) => {
+                const toneFreq = baseFreq * Math.pow(2, interval / 12);
+                
+                // Strumming-Effekt: Bei Gitarre mehr Verzögerung zwischen den Saiten
+                const strumDelay = isGuitar ? 0.06 : 0.03; 
+                const time = now + (i * strumDelay);
+
+                if (isGuitar) {
+                    playGuitarTone(toneFreq, time);
+                } else {
+                    playPianoTone(toneFreq, time);
+                }
+            });
+        }
+
+        // --- NAVIGATION ---
+        function rotate(direction) {
+            currentStep += direction;
+            updateView();
+            updateKeyCenter();
+        }
+
+        function updateView() {
+            const angle = currentStep * 30;
+            outerWheel.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+            
+            counterRotatingElements.forEach(item => {
+                const isOuter = item.element.closest('.outer-disc');
+                if (isOuter) {
+                     const counterRotation = -item.baseAngle - angle;
+                     item.element.style.transform = `rotate(${counterRotation}deg)`;
+                } else {
+                    item.element.style.transform = `rotate(${-item.baseAngle}deg)`;
+                }
+            });
+        }
+
+        function updateKeyCenter() {
+            let indexAtTop = (0 - currentStep) % 12;
+            if (indexAtTop < 0) indexAtTop += 12;
+            const keyNote = notes[indexAtTop];
+            keyDisplay.innerText = keyNote;
+        }
+
+        // Init
+        innerWheel.style.transform = `translate(-50%, -50%)`;
+        updateChordLabels(); // Setzt initiale Labels
+        updateView(); 
+        updateKeyCenter();
+
+    </script>
+</body>
+</html>
