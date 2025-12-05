@@ -1,117 +1,176 @@
+<!-- Version: v0.27.0 (2025-12-6) -->
 <!DOCTYPE html>
-<!-- Version: v0.18.0 (2025-12-04) -->
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Improvisations-Helfer V18 (Matrix Fix)</title>
+    <title>Harmonie-Rad V27 (Smart Notation)</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Gochi+Hand&display=swap" rel="stylesheet">
 
     <style>
-        * { box-sizing: border-box; }
+        /* --- BASICS --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: 'Patrick Hand', cursive; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; margin: 0; background-color: #f4f1ea; overflow: hidden; user-select: none; -webkit-user-select: none; overscroll-behavior: none;
+            font-family: 'Patrick Hand', cursive; display: flex; flex-direction: column; align-items: center; 
+            min-height: 100vh; margin: 0; background-color: #f4f1ea; overflow: hidden; 
+            user-select: none; -webkit-user-select: none; overscroll-behavior: none;
         }
-        h1 { margin-bottom: 0px; color: #333; font-size: 1.8rem; }
-        
-        .info-bar {
-            height: 40px; margin-bottom: 10px; display: flex; justify-content: center; align-items: center;
-            color: #555; font-size: 1.2rem; text-align: center; width: 90%; transition: opacity 0.3s;
-        }
-        .info-bar.fade-in { opacity: 1; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        h1 { margin: 5px 0; color: #333; font-size: 1.6rem; }
 
-        .settings-panel {
-            background: #fff; padding: 10px 15px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
-            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 15px; border: 1px solid #ccc; z-index: 100; max-width: 380px;
+        /* --- INFO BAR --- */
+        .info-bar {
+            min-height: 55px; margin-bottom: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-color: #222; color: #fff; width: 95%; max-width: 380px;
+            border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); padding: 5px 10px;
+            text-align: center; line-height: 1.2; border: 2px solid #444;
         }
-        .toggle-group { display: flex; align-items: center; gap: 8px; font-size: 1rem; color: #555; }
-        .mode-label { display: flex; flex-direction: column; align-items: center; line-height: 0.8; font-size: 0.8rem; }
-        .divider { width: 1px; background-color: #ddd; height: 25px; }
-        
-        .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+        .info-title { font-size: 1.3rem; font-weight: bold; color: #ffeb3b; }
+        .info-desc { font-size: 1rem; color: #ddd; font-family: sans-serif; letter-spacing: 0.5px; }
+
+        /* --- SETTINGS --- */
+        .settings-panel {
+            background: #fff; padding: 5px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px;
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; border: 1px solid #ccc; z-index: 100; max-width: 380px;
+        }
+        .toggle-group { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; color: #555; }
+        .mode-label { display: flex; flex-direction: column; align-items: center; line-height: 0.8; font-size: 0.7rem; }
+        .divider { width: 1px; background-color: #ddd; height: 20px; }
+        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider-switch {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px;
         }
         .slider-switch:before {
-            position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;
+            position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%;
         }
         input:checked + .slider-switch { background-color: #333; }
-        input:checked + .slider-switch:before { transform: translateX(18px); }
+        input:checked + .slider-switch:before { transform: translateX(16px); }
         #tonalityToggle:checked + .slider-switch { background-color: #1a2a3a; }
+        input[type=range] { width: 60px; accent-color: #333; cursor: pointer; }
 
-        .threshold-group {
-            width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 0.9rem; color: #666; border-top: 1px solid #eee; padding-top: 8px;
-        }
-        input[type=range] { flex-grow: 1; accent-color: #333; cursor: pointer; }
-
-        .wheel-container { position: relative; width: 360px; height: 360px; touch-action: none; margin-bottom: 10px; }
+        /* --- WHEEL --- */
+        .wheel-container { position: relative; width: 280px; height: 280px; touch-action: none; margin-bottom: 5px; flex-shrink: 0; }
         .connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
         .conn-path { fill: none; stroke-linecap: round; opacity: 0; animation: fadeInPath 0.4s forwards; }
         @keyframes fadeInPath { to { opacity: 0.7; } }
 
         .disc { position: absolute; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
-        .outer-disc { width: 360px; height: 360px; background-color: #fff; z-index: 1; border: 2px solid #333; cursor: grab; }
+        .outer-disc { width: 280px; height: 280px; background-color: #fff; z-index: 1; border: 2px solid #333; cursor: grab; }
         .outer-disc:active { cursor: grabbing; }
-        .inner-disc { width: 230px; height: 230px; background-color: #2b2b2b; color: #fff; z-index: 2; border: 3px solid #fff; pointer-events: none; transition: background-color 0.5s ease; }
+        .inner-disc { width: 180px; height: 180px; background-color: #2b2b2b; color: #fff; z-index: 2; border: 3px solid #fff; pointer-events: none; transition: background-color 0.5s ease; }
         .inner-disc.minor-mode { background-color: #1a2a3a; border-color: #a0e6ff; }
 
         .center-hub {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 65px; height: 65px; background-color: #fff; border-radius: 50%; z-index: 10; 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55px; height: 55px; background-color: #fff; border-radius: 50%; z-index: 10; 
             border: 3px solid #333; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: transform 0.1s;
         }
         .center-hub:active { transform: translate(-50%, -50%) scale(0.95); }
-        .center-label { font-size: 0.8rem; color: #666; line-height: 1; pointer-events: none;}
-        .center-key { font-size: 1.6rem; font-weight: bold; color: #333; line-height: 1; margin-top: 2px; pointer-events: none;}
+        .center-label { font-size: 0.6rem; color: #666; pointer-events: none;}
+        .center-key { font-size: 1.3rem; font-weight: bold; color: #333; line-height: 1; margin-top: 1px; pointer-events: none;}
 
-        .segment-group { position: absolute; width: 36px; height: 50%; top: 0; left: 50%; margin-left: -18px; transform-origin: bottom center; pointer-events: none; z-index: 5; transition: transform 0.1s; }
+        .segment-group { position: absolute; width: 30px; height: 50%; top: 0; left: 50%; margin-left: -15px; transform-origin: bottom center; pointer-events: none; z-index: 5; transition: transform 0.1s; }
         .segment-group.active .pos-roman, .segment-group.active .pos-icon { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 5px white); transition: all 0.2s ease-out; }
-        .segment-group:active .pos-roman, .segment-group:active .pos-icon { transform: scale(0.9); transition: transform 0.1s; }
+        .counter-rotator { position: absolute; width: 30px; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; transition: transform 0.3s; }
+        .outer-segment { position: absolute; width: 50px; height: 50%; top: 0; left: 50%; margin-left: -25px; transform-origin: bottom center; pointer-events: none; }
+        .outer-rotator { position: absolute; width: 50px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
 
-        .counter-rotator { position: absolute; width: 36px; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; transition: transform 0.3s; }
-        .outer-segment { position: absolute; width: 60px; height: 50%; top: 0; left: 50%; margin-left: -30px; transform-origin: bottom center; pointer-events: none; }
-        .outer-rotator { position: absolute; width: 60px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
+        .pos-note { top: 8px; height: 30px; }
+        .note-text { font-size: 1.3rem; font-weight: bold; color: #333; }
+        .pos-roman { top: 5px; height: 25px; flex-direction: column; }
+        .roman-text { font-size: 1.1rem; font-weight: bold; line-height: 1; transition: color 0.3s; }
+        .quality-text { font-size: 0.7rem; opacity: 0.8; margin-top: -2px; transition: color 0.3s; }
+        .pos-icon { top: 30px; height: 35px; } 
+        .icon-img { max-width: 24px; max-height: 24px; width: auto; height: auto; object-fit: contain; display: block; transition: filter 0.3s; }
+        .marker { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 10; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 18px solid #d32f2f; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
 
-        .pos-note { top: 12px; height: 35px; }
-        .note-text { font-size: 1.6rem; font-weight: bold; color: #333; }
-        .pos-roman { top: 6px; height: 30px; flex-direction: column; }
-        .roman-text { font-size: 1.2rem; font-weight: bold; line-height: 1; transition: color 0.3s; }
-        .quality-text { font-size: 0.8rem; opacity: 0.8; margin-top: -2px; transition: color 0.3s; }
-        .pos-icon { top: 40px; height: 40px; } 
-        .icon-img { max-width: 32px; max-height: 32px; width: auto; height: auto; object-fit: contain; display: block; transition: filter 0.3s; }
-        .emoji-fallback { font-size: 1.5rem; }
-
-        .marker {
-            position: absolute; top: -20px; left: 50%; transform: translateX(-50%); z-index: 10; width: 0; height: 0; 
-            border-left: 18px solid transparent; border-right: 18px solid transparent; border-top: 22px solid #d32f2f; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
+        /* --- DASHBOARD --- */
+        .dashboard {
+            width: 100%; max-width: 380px; background: #fff; border: 1px solid #ccc; border-radius: 10px; margin-bottom: 5px;
+            display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
+        .viz-container { display: flex; height: 120px; } 
+        .viz-part { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; }
+        .viz-divider { width: 1px; background: #eee; }
 
-        .progression-container { width: 100%; max-width: 380px; padding: 0 10px 20px 10px; display: flex; flex-direction: column; gap: 10px; }
+        /* REAL BOOK NOTATION */
+        .viz-part.notation { background-color: #fffcf5; }
+        #notationSvg { width: 100%; height: 100%; overflow: visible; }
+        
+        .staff-line { stroke: #222; stroke-width: 1.5; stroke-linecap: round; opacity: 0.8; }
+        .staff-line.ledger { opacity: 0.6; stroke-width: 1.5; }
+        
+        .jazz-note { 
+            fill: #111; 
+            /* Oval shape is handled in JS via RX/RY */
+        }
+        .jazz-stem { stroke: #111; stroke-width: 2.5; stroke-linecap: round; }
+        
+        .clef { font-family: 'Gochi Hand', cursive; font-size: 60px; fill: #111; }
+        .accidental { font-family: 'Gochi Hand', cursive; font-size: 24px; fill: #111; font-weight: bold; }
+        
+        /* 8va / 8vb Markers */
+        .octave-marker { font-family: 'Gochi Hand', cursive; font-size: 16px; fill: #444; font-style: italic; }
+        .octave-line { stroke: #444; stroke-width: 1; stroke-dasharray: 4,4; }
+
+        /* GUITAR CHART */
+        .chord-chart {
+            width: 90px; height: 100px; display: flex; flex-direction: column; align-items: center; font-family: 'Patrick Hand', cursive;
+        }
+        .chart-name { font-weight: bold; font-size: 1.3rem; margin-bottom: 2px; }
+        .chart-grid {
+            position: relative; width: 60px; height: 70px;
+            border-left: 2px solid #222; border-right: 2px solid #222; border-bottom: 2px solid #222;
+            display: flex;
+        }
+        .chart-grid.nut { border-top: 5px solid #222; }
+        .chart-grid.fret { border-top: 2px solid #222; }
+        .chart-string { flex: 1; border-right: 1px solid #222; height: 100%; position: relative; }
+        .chart-string:last-child { border-right: none; }
+        .chart-fret-line { position: absolute; left: 0; right: 0; height: 1px; background: #222; }
+        .chart-dot {
+            position: absolute; width: 11px; height: 11px; background: #111; border-radius: 50%;
+            left: 50%; transform: translateX(-50%) translateY(-50%); z-index: 2;
+        }
+        .chart-marker {
+            position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+            font-size: 12px; color: #222; font-weight: bold;
+        }
+        .fret-offset-label { position: absolute; top: 0; left: -25px; font-size: 1rem; font-weight: bold; }
+
+        /* PIANO */
+        .piano-keys { display: flex; height: 70px; position: relative; margin-top: 10px;}
+        .key { border: 1px solid #555; border-top: none; border-radius: 0 0 3px 3px; position: relative; }
+        .key.white { width: 14px; background: #fff; height: 100%; z-index: 1; }
+        .key.black { width: 10px; background: #333; height: 60%; margin-left: -5px; margin-right: -5px; z-index: 2; }
+        .key.active { background: #d32f2f !important; }
+
+        /* PROGRESSION */
+        .progression-container { width: 100%; max-width: 380px; padding: 0 10px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
         .prog-btn {
-            background: white; border: 1px solid #ccc; border-radius: 10px; padding: 10px 15px; text-align: left; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; height: 70px;
+            background: white; border: 1px solid #ccc; border-radius: 8px; padding: 5px 12px; text-align: left; cursor: pointer; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; height: 50px;
         }
-        .prog-btn:active { transform: scale(0.98); }
         .prog-btn:hover { background: #f9f9f9; border-color: #999; }
         .prog-btn.playing { border-color: #333; background: #eee; cursor: wait;}
         .prog-info { display: flex; flex-direction: column; }
-        .prog-title { font-weight: bold; font-size: 1rem; color: #333; }
-        .prog-steps { font-size: 0.9rem; color: #666; margin-top: 2px; }
-        .prog-example { font-size: 0.8rem; color: #888; font-style: italic; margin-top: 2px; }
+        .prog-title { font-weight: bold; font-size: 0.95rem; color: #333; }
+        .prog-steps { font-size: 0.8rem; color: #666; font-family: sans-serif; }
     </style>
 </head>
 <body>
 
     <h1>Harmonie-Rad</h1>
-    <div class="info-bar" id="infoBar">Klicke auf ein Symbol!</div>
+
+    <div class="info-bar" id="infoBar">
+        <div class="info-title">Willkommen!</div>
+        <div class="info-desc">Wähle eine Tonart und klicke auf ein Symbol.</div>
+    </div>
 
     <div class="settings-panel">
         <div class="toggle-group">
-            <div class="mode-label"><span class="mode-icon">☀</span><span>(Dur)</span></div>
+            <span class="mode-label">☀</span>
             <label class="switch"><input type="checkbox" id="tonalityToggle" onchange="updateUI()"><span class="slider-switch"></span></label>
-            <div class="mode-label"><span class="mode-icon">🌙</span><span>(Moll)</span></div>
+            <span class="mode-label">🌙</span>
         </div>
         <div class="divider"></div>
         <div class="toggle-group">
@@ -119,14 +178,14 @@
         </div>
         <div class="divider"></div>
         <div class="toggle-group">
-            <span>🎹</span><label class="switch"><input type="checkbox" id="guitarToggle"><span class="slider-switch"></span></label><span>🎸</span>
+            <span>🎹</span><label class="switch"><input type="checkbox" id="guitarToggle" onchange="updateInstrumentDisplay()"><span class="slider-switch"></span></label><span>🎸</span>
         </div>
         <div class="divider"></div>
         <div class="toggle-group">
             <span>☊</span><label class="switch"><input type="checkbox" id="pathToggle" checked onclick="redrawLines()"><span class="slider-switch"></span></label>
         </div>
         <div class="threshold-group">
-            <span>Fokus</span><input type="range" id="complexitySlider" min="1" max="3" value="2" step="1" oninput="redrawLines()"><span>Entdecker</span>
+            <input type="range" id="complexitySlider" min="1" max="3" value="2" step="1" oninput="redrawLines()">
         </div>
     </div>
 
@@ -138,6 +197,24 @@
         <div class="center-hub" onclick="playKeyCenter()"><span class="center-label">Tonart</span><span class="center-key" id="keyDisplay">C</span></div>
     </div>
 
+    <div class="dashboard">
+        <div class="viz-container">
+            <div class="viz-part notation">
+                <svg id="notationSvg" viewBox="0 0 160 120">
+                    <line x1="10" y1="40" x2="150" y2="40" class="staff-line" />
+                    <line x1="10" y1="50" x2="150" y2="50" class="staff-line" />
+                    <line x1="10" y1="60" x2="150" y2="60" class="staff-line" />
+                    <line x1="10" y1="70" x2="150" y2="70" class="staff-line" />
+                    <line x1="10" y1="80" x2="150" y2="80" class="staff-line" />
+                    <text x="10" y="78" class="clef">𝄞</text>
+                    <g id="notesGroup"></g> 
+                </svg>
+            </div>
+            <div class="viz-divider"></div>
+            <div class="viz-part" id="instrumentContainer"></div>
+        </div>
+    </div>
+
     <div class="progression-container" id="progContainer"></div>
 
     <script>
@@ -145,6 +222,29 @@
         function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
         const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "H"];
+        const enharmonicMap = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb", "Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#" };
+        
+        // C4 = 0 in unserer Logic, D4=1... 
+        // Wir nutzen den Index im Array
+        const noteIndexMap = {};
+        notes.forEach((n,i) => noteIndexMap[n] = i);
+
+        // Guitar Database (mit -1 für x)
+        const guitarChordLibrary = {
+            "C": [-1, 3, 2, 0, 1, 0], "Cm": [-1, 3, 5, 5, 4, 3], "Cmaj7": [-1, 3, 2, 0, 0, 0], "C7": [-1, 3, 2, 3, 1, 0],
+            "Db": [-1, 4, 6, 6, 6, 4], "Dbm": [-1, 4, 6, 6, 5, 4], "Dbmaj7": [-1, 4, 6, 5, 6, 4], "Db7": [-1, 4, 6, 4, 6, 4],
+            "D": [-1, -1, 0, 2, 3, 2], "Dm": [-1, -1, 0, 2, 3, 1], "Dmaj7": [-1, -1, 0, 2, 2, 2], "D7": [-1, -1, 0, 2, 1, 2],
+            "Eb": [-1, 6, 8, 8, 8, 6], "Ebm": [-1, 6, 8, 8, 7, 6], "Ebmaj7": [-1, 6, 8, 7, 8, 6], "Eb7": [-1, 6, 8, 6, 8, 6],
+            "E": [0, 2, 2, 1, 0, 0], "Em": [0, 2, 2, 0, 0, 0], "Emaj7": [0, 2, 1, 1, 0, 0], "E7": [0, 2, 0, 1, 0, 0],
+            "F": [1, 3, 3, 2, 1, 1], "Fm": [1, 3, 3, 1, 1, 1], "Fmaj7": [-1, -1, 3, 2, 1, 0], "F7": [1, 3, 1, 2, 1, 1],
+            "Gb": [2, 4, 4, 3, 2, 2], "Gbm": [2, 4, 4, 2, 2, 2], "Gbmaj7": [2, -1, 3, 3, 2, -1], "Gb7": [2, 4, 2, 3, 2, 2],
+            "G": [3, 2, 0, 0, 0, 3], "Gm": [3, 5, 5, 3, 3, 3], "Gmaj7": [3, 2, 0, 0, 0, 2], "G7": [3, 2, 0, 0, 0, 1],
+            "Ab": [4, 6, 6, 5, 4, 4], "Abm": [4, 6, 6, 4, 4, 4], "Abmaj7": [4, -1, 5, 5, 4, -1], "Ab7": [4, 6, 4, 5, 4, 4],
+            "A": [-1, 0, 2, 2, 2, 0], "Am": [-1, 0, 2, 2, 1, 0], "Amaj7": [-1, 0, 2, 1, 2, 0], "A7": [-1, 0, 2, 0, 2, 0],
+            "Bb": [-1, 1, 3, 3, 3, 1], "Bbm": [-1, 1, 3, 3, 2, 1], "Bbmaj7": [-1, 1, 3, 2, 3, 1], "Bb7": [-1, 1, 3, 1, 3, 1],
+            "H": [-1, 2, 4, 4, 4, 2], "Hm": [-1, 2, 4, 4, 3, 2], "Hmaj7": [-1, 2, 4, 3, 4, 2], "H7": [-1, 2, 1, 2, 0, 2]
+        };
+
         const colorsMajor = { tonic: "#C1E1C1", subdom: "#FDFD96", dom: "#FFB7B2", minor: "#B5EAD7", dim: "#D3D3D3" };
         const colorsMinor = { tonic: "#4682B4", tonicParallel: "#89CFF0", subdom: "#87CEEB", subdomParallel: "#B0E0E6", dom: "#5A9BD4", dim: "#B0C4DE" };
 
@@ -154,98 +254,48 @@
               minor: { roman: "bIII", desc: "Das Ferienhaus (Dur-Parallele). Hell.", emoji: "🏡", image: "ferienhaus.png", color: colorsMinor.tonicParallel, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 2, 
-              major: { roman: "II", desc: "Brücke zur Spannung.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              major: { roman: "II", desc: "Die Brücke zur Spannung (V).", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
               minor: { roman: "iv", desc: "Kleine Brücke. Zieht zur V.", emoji: "🌉", image: "bruecke.png", color: colorsMinor.subdom, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
             { index: 4, 
-              major: { roman: "III", desc: "Moll-Dominante.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              minor: { roman: "V", desc: "Vulkan! Will nach Hause (i).", emoji: "🌋", image: "berg_gross.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              major: { roman: "III", desc: "Moll-Dominante. Führt zur VI.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              minor: { roman: "V", desc: "Der Vulkan! Will nach Hause (i).", emoji: "🌋", image: "berg_gross.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             { index: 5, 
-              major: { roman: "IV", desc: "Aufbruch.", emoji: "⛰️", image: "berg_klein.png", color: colorsMajor.subdom, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
+              major: { roman: "IV", desc: "Kleiner Ausflug. Aufbruch.", emoji: "⛰️", image: "berg_klein.png", color: colorsMajor.subdom, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
               minor: { roman: "bVI", desc: "Dramatischer Höhepunkt.", emoji: "⛰️", image: "berg_klein.png", color: colorsMinor.subdomParallel, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 7, 
-              major: { roman: "V", desc: "Vulkan. Maximale Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} },
+              major: { roman: "V", desc: "Der Vulkan. Maximale Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} },
               minor: { roman: "bVII", desc: "Hintertür zum Ferienhaus.", emoji: "🌳", image: "bank.png", color: colorsMinor.dim, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 9, 
-              major: { roman: "VI", desc: "Moll-Parallele.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              major: { roman: "VI", desc: "Moll-Parallele. Etwas traurig.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
               minor: { roman: "i", desc: "Moll-Zuhause. Melancholisch.", emoji: "🏠", image: "haus.png", color: colorsMinor.tonic, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
             { index: 11, 
-              major: { roman: "VII", desc: "Klippe. Instabil.", emoji: "⚡", image: "klippe.png", color: colorsMajor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} },
+              major: { roman: "VII", desc: "Die Klippe. Sehr instabil.", emoji: "⚡", image: "klippe.png", color: colorsMajor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} },
               minor: { roman: "ii°", desc: "Vorbereiter der Spannung.", emoji: "⚡", image: "klippe.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
         ];
 
-        // --- STATISTIK & MATRIX V4 (Fixed Weights for Focus Mode) ---
-        // Jede Stufe hat nun mindestens einen Pfeil mit Weight 3
         const probabilityMap = {
             major: {
-                pop: {
-                    "I":  [["V", 3], ["IV", 3], ["VI", 2], ["II", 1], ["III", 1]],
-                    "II": [["V", 3], ["IV", 2], ["I", 1], ["III", 1], ["VI", 1]],
-                    "III":[["VI", 3], ["IV", 2], ["I", 1], ["V", 1]],
-                    "IV": [["I", 3], ["V", 3], ["II", 1], ["VI", 1]], // IV -> V ist jetzt 3 (Pop)
-                    "V":  [["I", 3], ["VI", 2], ["IV", 2], ["III", 1], ["II", 1]], 
-                    "VI": [["IV", 3], ["V", 2], ["II", 2], ["III", 1]],
-                    "VII":[["I", 3], ["III", 2], ["VI", 1]]  
-                },
-                jazz: {
-                    "I":  [["VI", 3], ["IV", 2], ["II", 2], ["III", 1]],
-                    "II": [["V", 3], ["bII", 1]],
-                    "III":[["VI", 3], ["IV", 1], ["bIII", 1]],
-                    "IV": [["I", 3], ["VII", 1], ["IVm", 1]], // IV->I gestärkt
-                    "V":  [["I", 3], ["VI", 1], ["III", 1]], 
-                    "VI": [["II", 3], ["V", 1]],
-                    "VII":[["III", 3], ["I", 1]] 
-                }
+                pop: { "I": [["V",3],["IV",3],["VI",2],["II",1]], "II": [["V",3],["IV",2]], "III":[["VI",3],["IV",2]], "IV": [["I",3],["V",3]], "V": [["I",3],["VI",2],["IV",2]], "VI": [["IV",3],["V",2]], "VII":[["I",3]] },
+                jazz: { "I": [["VI",3],["IV",2]], "II": [["V",3]], "III":[["VI",3]], "IV": [["I",3],["VII",1]], "V": [["I",3]], "VI": [["II",3]], "VII":[["III",3],["I",1]] }
             },
             minor: {
-                pop: {
-                    "i":  [["V", 3], ["bVI", 3], ["bIII", 2], ["bVII", 2]],
-                    "iv": [["V", 3], ["i", 2], ["bVII", 1]],
-                    "V":  [["i", 3], ["bVI", 2], ["bIII", 1]], 
-                    "bIII":[["bVI", 2], ["iv", 1], ["bVII", 1], ["i", 3]], 
-                    "bVI":[["bVII", 2], ["V", 2], ["iv", 1], ["bIII", 3]],
-                    "bVII":[["bIII", 3], ["bVI", 2], ["i", 1]],
-                    "ii°":[["V", 3], ["i", 1]]
-                },
-                jazz: {
-                    "i":  [["iv", 3], ["bVI", 2], ["ii°", 1]], 
-                    "ii°":[["V", 3]],
-                    "V":  [["i", 3]], 
-                    "iv": [["bVII", 2], ["V", 1], ["i", 3]],
-                    "bVI":[["ii°", 3], ["V", 1]],
-                    "bIII":[["bVI", 3]], 
-                    "bVII":[["bIII", 3]]
-                }
+                pop: { "i": [["V",3],["bVI",3]], "iv": [["V",3],["i",2]], "V": [["i",3],["bVI",2]], "bIII":[["bVI",2],["i",3]], "bVI":[["bVII",2],["V",2]], "bVII":[["bIII",3]], "ii°":[["V",3]] },
+                jazz: { "i": [["iv",3],["bVI",2]], "ii°":[["V",3]], "V": [["i",3]], "iv": [["bVII",2],["V",1]], "bVI":[["ii°",3]], "bIII":[["bVI",3]], "bVII":[["bIII",3]] }
             }
         };
 
         const progressions = {
             major: {
-                pop: [
-                    { name: "Axis of Awesome", seq: ["I", "V", "VI", "IV"], ex: "Let It Be" },
-                    { name: "50s Ballade", seq: ["I", "VI", "IV", "V"], ex: "Stand By Me" },
-                    { name: "Pop Standard", seq: ["VI", "IV", "I", "V"], ex: "Africa" }
-                ],
-                jazz: [
-                    { name: "The Jazz DNA", seq: ["II", "V", "I"], ex: "Satin Doll" },
-                    { name: "Turnaround", seq: ["I", "VI", "II", "V"], ex: "I Got Rhythm" },
-                    { name: "Moll-Kadenz", seq: ["VII", "III", "VI"], ex: "Autumn Leaves (Intro)" }
-                ]
+                pop: [ { name: "Axis of Awesome", seq: ["I", "V", "VI", "IV"], ex: "Let It Be" }, { name: "50s Ballade", seq: ["I", "VI", "IV", "V"], ex: "Stand By Me" }, { name: "Pop Standard", seq: ["VI", "IV", "I", "V"], ex: "Africa" } ],
+                jazz: [ { name: "The Jazz DNA", seq: ["II", "V", "I"], ex: "Satin Doll" }, { name: "Turnaround", seq: ["I", "VI", "II", "V"], ex: "I Got Rhythm" }, { name: "Moll-Kadenz", seq: ["VII", "III", "VI"], ex: "Autumn Leaves" } ]
             },
             minor: {
-                pop: [
-                    { name: "Andalusian", seq: ["i", "bVII", "bVI", "V"], ex: "Hit the Road Jack" },
-                    { name: "4-Chord Loop", seq: ["i", "bVI", "bIII", "bVII"], ex: "Zombie" },
-                    { name: "Minor Ballad", seq: ["i", "iv", "V", "i"], ex: "House of Rising Sun" }
-                ],
-                jazz: [
-                    { name: "Minor II-V-I", seq: ["ii°", "V", "i"], ex: "Autumn Leaves" },
-                    { name: "Minor Turnaround", seq: ["i", "bVI", "ii°", "V"], ex: "Blue Bossa" },
-                    { name: "Minor Blues", seq: ["i", "iv", "i", "V"], ex: "Mr. P.C." }
-                ]
+                pop: [ { name: "Andalusian", seq: ["i", "bVII", "bVI", "V"], ex: "Hit the Road Jack" }, { name: "4-Chord Loop", seq: ["i", "bVI", "bIII", "bVII"], ex: "Zombie" }, { name: "Minor Ballad", seq: ["i", "iv", "V", "i"], ex: "House of Rising Sun" } ],
+                jazz: [ { name: "Minor II-V-I", seq: ["ii°", "V", "i"], ex: "Autumn Leaves" }, { name: "Minor Turnaround", seq: ["i", "bVI", "ii°", "V"], ex: "Blue Bossa" }, { name: "Minor Blues", seq: ["i", "iv", "i", "V"], ex: "Mr. P.C." } ]
             }
         };
 
@@ -261,162 +311,299 @@
         const progContainer = document.getElementById('progContainer');
         const connLayer = document.getElementById('connLayer');
         const infoBar = document.getElementById('infoBar');
+        const instrumentContainer = document.getElementById('instrumentContainer');
+        const notesGroup = document.getElementById('notesGroup');
         
         const counterRotatingElements = [];
         const segmentGroups = []; 
-        let currentVisualAngle = 0; 
         let currentStep = 0;        
         let isSequencerPlaying = false;
         let lastClickedRoman = null; 
+        let lastPlayedNotes = [];
+        let currentChordLabelForVisualizer = "";
 
-        notes.forEach((note, index) => {
-            const segment = document.createElement('div');
-            segment.className = 'outer-segment'; 
-            segment.style.transform = `rotate(${index * 30}deg)`;
-            const wrapper = document.createElement('div');
-            wrapper.className = 'outer-rotator pos-note';
-            wrapper.innerHTML = `<span class="note-text">${note}</span>`;
-            segment.appendChild(wrapper);
-            outerWheel.appendChild(segment);
-            counterRotatingElements.push({ element: wrapper, baseAngle: index * 30 });
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initWheel();
+            setWheelRotation(0);
+            updateUI();
         });
 
-        wheelPositions.forEach((posData) => {
-            if (posData) {
-                const index = posData.index;
-                const group = document.createElement('div');
-                group.className = 'segment-group';
-                group.style.transform = `rotate(${index * 30}deg)`;
-                group.dataset.index = index; 
-                
-                const refs = { group: group, data: posData };
+        function initWheel() {
+            notes.forEach((note, index) => {
+                const segment = document.createElement('div');
+                segment.className = 'outer-segment'; 
+                segment.style.transform = `rotate(${index * 30}deg)`;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'outer-rotator pos-note';
+                wrapper.innerHTML = `<span class="note-text">${note}</span>`;
+                segment.appendChild(wrapper);
+                outerWheel.appendChild(segment);
+                counterRotatingElements.push({ element: wrapper, baseAngle: index * 30 });
+            });
 
-                group.addEventListener('click', (e) => {
-                    e.stopPropagation(); 
-                    if(isSequencerPlaying) return; 
-                    playChordFromPosition(posData);
-                });
-
-                const romanWrapper = document.createElement('div');
-                romanWrapper.className = 'counter-rotator pos-roman';
-                const romanSpan = document.createElement('span');
-                romanSpan.className = 'roman-text';
-                const labelSpan = document.createElement('span');
-                labelSpan.className = 'quality-text';
-                
-                romanWrapper.appendChild(romanSpan);
-                romanWrapper.appendChild(labelSpan);
-                group.appendChild(romanWrapper);
-                refs.romanSpan = romanSpan;
-                refs.labelSpan = labelSpan;
-
-                const iconWrapper = document.createElement('div');
-                iconWrapper.className = 'counter-rotator pos-icon';
-                const iconImg = document.createElement('img');
-                iconImg.className = 'icon-img';
-                iconWrapper.appendChild(iconImg);
-                group.appendChild(iconWrapper);
-                refs.iconImg = iconImg;
-                
-                romanWrapper.style.transform = `rotate(${-index * 30}deg)`;
-                iconWrapper.style.transform = `rotate(${-index * 30}deg)`;
-                
-                innerWheel.appendChild(group);
-                segmentGroups.push(refs);
-            }
-        });
+            wheelPositions.forEach((posData) => {
+                if (posData) {
+                    const index = posData.index;
+                    const group = document.createElement('div');
+                    group.className = 'segment-group';
+                    group.style.transform = `rotate(${index * 30}deg)`;
+                    group.dataset.index = index; 
+                    const refs = { group: group, data: posData };
+                    group.addEventListener('click', (e) => {
+                        e.stopPropagation(); 
+                        if(isSequencerPlaying) return; 
+                        playChordFromPosition(posData);
+                    });
+                    const romanWrapper = document.createElement('div');
+                    romanWrapper.className = 'counter-rotator pos-roman';
+                    const romanSpan = document.createElement('span');
+                    romanSpan.className = 'roman-text';
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'quality-text';
+                    romanWrapper.appendChild(romanSpan); romanWrapper.appendChild(labelSpan);
+                    group.appendChild(romanWrapper); refs.romanSpan = romanSpan; refs.labelSpan = labelSpan;
+                    const iconWrapper = document.createElement('div');
+                    iconWrapper.className = 'counter-rotator pos-icon';
+                    const iconImg = document.createElement('img');
+                    iconImg.className = 'icon-img';
+                    iconWrapper.appendChild(iconImg);
+                    group.appendChild(iconWrapper); refs.iconImg = iconImg;
+                    romanWrapper.style.transform = `rotate(${-index * 30}deg)`;
+                    iconWrapper.style.transform = `rotate(${-index * 30}deg)`;
+                    innerWheel.appendChild(group);
+                    segmentGroups.push(refs);
+                }
+            });
+        }
 
         function setWheelRotation(angle) {
             outerWheel.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
-            counterRotatingElements.forEach(item => {
-                const counterRotation = -item.baseAngle - angle;
-                item.element.style.transform = `rotate(${counterRotation}deg)`;
+            document.querySelectorAll('.outer-rotator').forEach((el, i) => {
+                el.style.transform = `rotate(${- (i * 30) - angle}deg)`;
             });
         }
 
-        function getCoordinatesForIndex(index, radius) {
-            const angleInRad = (index * 30 - 90) * (Math.PI / 180);
-            const cx = 180; const cy = 180;
-            return { x: cx + radius * Math.cos(angleInRad), y: cy + radius * Math.sin(angleInRad) };
+        // --- DRAWING ---
+        // Helpers for MIDI pitch
+        function getMidiPitch(noteObj) {
+            const idx = noteIndexMap[noteObj.note.replace('#','')];
+            const isSharp = noteObj.note.includes("#");
+            return (noteObj.octave + 1) * 12 + idx + (isSharp ? 1 : 0);
         }
 
-        function redrawLines() {
-            if (lastClickedRoman) {
-                drawConnections(lastClickedRoman);
-            } else {
-                connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
-            }
-        }
-
-        function drawConnections(sourceRoman) {
-            if (!pathToggle.checked) { connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>'; return; }
-            connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
-
-            const isJazz = jazzToggle.checked;
-            const isMinor = tonalityToggle.checked;
-            const tonalityKey = isMinor ? 'minor' : 'major';
-            const styleKey = isJazz ? 'jazz' : 'pop';
+        function drawNotation(playedNotes) {
+            notesGroup.innerHTML = '';
             
-            const targets = probabilityMap[tonalityKey][styleKey][sourceRoman];
-            const complexity = parseInt(complexitySlider.value);
+            // 1. Calculate Average Pitch for Auto-Octave
+            let avgPitch = playedNotes.reduce((acc, n) => acc + getMidiPitch(n), 0) / playedNotes.length;
+            
+            let octaveShift = 0; // 0=Normal, -1=8vb (draw higher), 1=8va (draw lower)
+            // Middle C (C4) is ~60. 
+            // Guitar chords are often low (E2-E4 range ~40-64).
+            // Treble clef center B4 is ~71.
+            
+            if(avgPitch < 55) octaveShift = -1; // 8vb
+            if(avgPitch > 84) octaveShift = 1;  // 8va
 
-            if (!targets) return;
-
-            const sourceGroupRef = segmentGroups.find(ref => {
-                const modeData = isMinor ? ref.data.minor : ref.data.major;
-                return modeData.roman === sourceRoman;
-            });
-            if(!sourceGroupRef) return;
-            const sourceIndex = sourceGroupRef.data.index;
-            const startPos = getCoordinatesForIndex(sourceIndex, 85);
-
-            targets.forEach(target => {
-                const targetRoman = target[0];
-                const weight = target[1]; 
+            // Add Octave Marker if needed
+            if (octaveShift !== 0) {
+                const markerText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                markerText.setAttribute("class", "octave-marker");
+                markerText.setAttribute("x", 10);
                 
-                if (complexity === 1 && weight < 3) return;
-                if (complexity === 2 && weight < 2) return;
+                const markerLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                markerLine.setAttribute("class", "octave-line");
+                markerLine.setAttribute("x1", 35); markerLine.setAttribute("x2", 130);
+                
+                if (octaveShift === -1) {
+                    markerText.textContent = "8vb"; markerText.setAttribute("y", 115);
+                    markerLine.setAttribute("y1", 110); markerLine.setAttribute("y2", 110);
+                } else {
+                    markerText.textContent = "8va"; markerText.setAttribute("y", 15);
+                    markerLine.setAttribute("y1", 20); markerLine.setAttribute("y2", 20);
+                }
+                notesGroup.appendChild(markerText);
+                notesGroup.appendChild(markerLine);
+            }
 
-                const targetGroupRef = segmentGroups.find(ref => {
-                    const modeData = isMinor ? ref.data.minor : ref.data.major;
-                    return modeData.roman === targetRoman;
-                });
-                if(!targetGroupRef) return;
-                const targetIndex = targetGroupRef.data.index;
+            // 2. Sort and Draw
+            let xPos = 60;
+            // Deep copy to not mess up audio playback data
+            let notesToDraw = JSON.parse(JSON.stringify(playedNotes));
+            notesToDraw.sort((a,b) => getMidiPitch(a) - getMidiPitch(b));
 
-                const endPos = getCoordinatesForIndex(targetIndex, 85);
-                const ctrlX = 180; const ctrlY = 180;
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                const d = `M ${startPos.x} ${startPos.y} Q ${ctrlX} ${ctrlY} ${endPos.x} ${endPos.y}`;
-                path.setAttribute("d", d); path.setAttribute("class", "conn-path"); path.setAttribute("stroke", "#ffffff");
-                const width = weight === 3 ? 5 : (weight === 2 ? 2.5 : 1);
-                path.setAttribute("stroke-width", width);
-                if (weight === 1) path.setAttribute("stroke-dasharray", "5,5");
-                if (weight > 1) path.setAttribute("marker-end", "url(#arrowhead)");
-                connLayer.appendChild(path);
+            notesToDraw.forEach((n, i) => {
+                // Apply visual shift (reverse logic: if 8vb, visual note goes UP, so subtract from octave)
+                let visualOctave = n.octave - octaveShift;
+                
+                let baseVal = noteIndexMap[n.note.replace('#','')]; 
+                // SVG Y calc: C4=90 (in 120 box, center line is B4=60)
+                // C4 is ledger line below. 
+                // Lines at: 40(F5), 50(D5), 60(B4), 70(G4), 80(E4).
+                // C4 should be at 90.
+                let octDiff = visualOctave - 4; 
+                let y = 90 - (octDiff * 35) - (baseVal * 5); 
+
+                // Antibumping (Shift x if second)
+                let currentX = xPos;
+                if (i > 0) {
+                    let prev = notesToDraw[i-1];
+                    let semitones = getMidiPitch(n) - getMidiPitch(prev);
+                    if (semitones <= 2) currentX += 13; // Verschieben
+                }
+
+                // Legder Lines
+                if (y >= 90 || y <= 30) {
+                    const ledger = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    ledger.setAttribute("x1", currentX - 9); ledger.setAttribute("x2", currentX + 9);
+                    let lineY = Math.round(y/10)*10; if(lineY % 10 !== 0) lineY = y; 
+                    ledger.setAttribute("y1", lineY); ledger.setAttribute("y2", lineY); 
+                    ledger.setAttribute("class", "staff-line ledger");
+                    notesGroup.appendChild(ledger);
+                }
+
+                // Stem
+                const stem = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                if (y < 60) { // Stem Down
+                    stem.setAttribute("x1", currentX - 6); stem.setAttribute("x2", currentX - 6);
+                    stem.setAttribute("y1", y); stem.setAttribute("y2", y + 28);
+                } else { // Stem Up
+                    stem.setAttribute("x1", currentX + 6); stem.setAttribute("x2", currentX + 6);
+                    stem.setAttribute("y1", y); stem.setAttribute("y2", y - 28);
+                }
+                stem.setAttribute("class", "jazz-stem");
+                notesGroup.appendChild(stem);
+
+                // Note Head (Ellipse + Rotation)
+                const noteHead = document.createElementNS("http://www.w3.org/2000/svg", "ellipse");
+                noteHead.setAttribute("cx", currentX); noteHead.setAttribute("cy", y);
+                noteHead.setAttribute("rx", 6.5); noteHead.setAttribute("ry", 4.0);
+                noteHead.setAttribute("class", "jazz-note");
+                // Rotate around center
+                noteHead.setAttribute("transform", `rotate(-20 ${currentX} ${y})`);
+                notesGroup.appendChild(noteHead);
+
+                // Sharp
+                if (n.note.includes("#")) {
+                    const sharp = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    sharp.setAttribute("class", "accidental");
+                    sharp.setAttribute("x", currentX - 20); sharp.setAttribute("y", y + 8); 
+                    sharp.textContent = "♯";
+                    notesGroup.appendChild(sharp);
+                }
             });
         }
 
-        // --- GUITAR VOICING LOGIK ---
-        function getGuitarVoicing(chordType, roman, style) {
-            switch(chordType) {
-                case "Dur": return [0, 7, 12, 16, 19];
-                case "Moll": return [0, 7, 12, 15, 19];
-                case "maj7": return [0, 11, 16, 19];
-                case "m7": return [0, 10, 15, 19];
-                case "7": return [0, 7, 10, 16]; 
-                case "7(b9)": return [0, 7, 10, 13, 16]; 
-                case "m7b5": return [0, 10, 15, 18];
-                case "Verm.": return [0, 9, 15, 18]; 
-                default: return [0, 4, 7]; 
+        function drawGuitarChart(noteName, quality) {
+            instrumentContainer.innerHTML = '';
+            let key = noteName;
+            if (quality.includes("m") && !quality.includes("maj")) key += "m";
+            else if (quality.includes("maj7")) key += "maj7";
+            else if (quality.includes("7")) key += "7";
+            key = key.replace(" ", "");
+            
+            let pattern = guitarChordLibrary[key];
+            if (!pattern && enharmonicMap[noteName]) {
+                let altKey = key.replace(noteName, enharmonicMap[noteName]);
+                pattern = guitarChordLibrary[altKey];
+                if(pattern) key = altKey;
+            }
+            if (!pattern) { 
+                if(quality.includes("m")) pattern = guitarChordLibrary[noteName+"m"] || guitarChordLibrary[enharmonicMap[noteName]+"m"];
+                else pattern = guitarChordLibrary[noteName] || guitarChordLibrary[enharmonicMap[noteName]];
+            }
+            if (!pattern) pattern = [-1,-1,-1,-1,-1,-1];
+
+            let minFret = 99;
+            pattern.forEach(p => { if(p > 0 && p < minFret) minFret = p; });
+            if(minFret === 99) minFret = 1;
+            let offset = 0;
+            if(minFret > 1) offset = minFret - 1;
+
+            const chart = document.createElement('div');
+            chart.className = 'chord-chart';
+            const title = document.createElement('div');
+            title.className = 'chart-name'; title.innerHTML = key;
+            chart.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = offset > 0 ? 'chart-grid fret' : 'chart-grid nut';
+            
+            if(offset > 0) {
+                const flabel = document.createElement('div');
+                flabel.className = 'fret-offset-label';
+                flabel.innerText = (offset+1) + "fr";
+                grid.appendChild(flabel);
+            }
+
+            for(let i=1; i<=4; i++) {
+                const line = document.createElement('div');
+                line.className = 'chart-fret-line'; line.style.top = (i * 14) + "px";
+                grid.appendChild(line);
+            }
+
+            pattern.forEach((fret, stringIndex) => { 
+                const stringDiv = document.createElement('div');
+                stringDiv.className = 'chart-string';
+                if (fret === -1) {
+                    const m = document.createElement('div'); m.className = 'chart-marker'; m.innerText = 'x'; stringDiv.appendChild(m);
+                } else if (fret === 0) {
+                    const m = document.createElement('div'); m.className = 'chart-marker'; m.innerText = 'o'; stringDiv.appendChild(m);
+                } else {
+                    const relativeFret = fret - offset;
+                    if(relativeFret > 0 && relativeFret <= 5) {
+                        const dot = document.createElement('div'); dot.className = 'chart-dot';
+                        dot.style.top = ((relativeFret * 14) - 7) + "px"; 
+                        stringDiv.appendChild(dot);
+                    }
+                }
+                grid.appendChild(stringDiv);
+            });
+            chart.appendChild(grid);
+            instrumentContainer.appendChild(chart);
+        }
+
+        function drawPiano(playedNotes) {
+            instrumentContainer.innerHTML = '';
+            const pianoDiv = document.createElement('div'); pianoDiv.className = 'piano-keys';
+            const pattern = ['w','b','w','b','w','w','b','w','b','w','b','w'];
+            
+            // Check Octaves in playedNotes to adjust view
+            // Default show Octave 4 and 5
+            const baseOctave = 4;
+
+            for(let oct=0; oct<2; oct++) {
+                const currentOctave = baseOctave + oct;
+                pattern.forEach((type, i) => {
+                    const key = document.createElement('div');
+                    key.className = `key ${type === 'w' ? 'white' : 'black'}`;
+                    const noteName = notes[i];
+                    // EXACT MATCH: Note + Octave
+                    const isActive = playedNotes.some(n => n.note === noteName && n.octave === currentOctave);
+                    if (isActive) key.classList.add('active');
+                    pianoDiv.appendChild(key);
+                });
+            }
+            instrumentContainer.appendChild(pianoDiv);
+        }
+
+        function updateInstrumentDisplay() {
+            if (lastPlayedNotes.length > 0) {
+                const isGuitar = guitarToggle.checked;
+                if (!isGuitar) drawPiano(lastPlayedNotes);
+                else {
+                    if(currentChordLabelForVisualizer) {
+                        const parts = currentChordLabelForVisualizer.split("|");
+                        drawGuitarChart(parts[0], parts[1]);
+                    }
+                }
             }
         }
 
+        // --- AUDIO ENGINE ---
         let audioCtx;
-        const noteFrequencies = {
-            "C": 261.63, "C#": 277.18, "D": 293.66, "D#": 311.13, "E": 329.63, "F": 349.23,
-            "F#": 369.99, "G": 392.00, "G#": 415.30, "A": 440.00, "A#": 466.16, "H": 493.88
-        };
+        const noteFrequencies = { "C": 261.63, "C#": 277.18, "D": 293.66, "D#": 311.13, "E": 329.63, "F": 349.23, "F#": 369.99, "G": 392.00, "G#": 415.30, "A": 440.00, "A#": 466.16, "H": 493.88 };
 
         function initAudio() {
             if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; audioCtx = new AudioContext(); }
@@ -436,69 +623,75 @@
             }
         }
 
-        function updateInfoBar(text) {
-            infoBar.classList.remove('fade-in');
-            void infoBar.offsetWidth;
-            infoBar.innerText = text;
-            infoBar.classList.add('fade-in');
+        function getGuitarVoicingAudio(chordType) {
+            switch(chordType) {
+                case "Dur": return [0, 7, 12, 16, 19]; case "Moll": return [0, 7, 12, 15, 19];
+                case "maj7": return [0, 11, 16, 19]; case "m7": return [0, 10, 15, 19];
+                case "7": return [0, 7, 10, 16]; case "7(b9)": return [0, 7, 10, 13, 16]; 
+                default: return [0, 4, 7]; 
+            }
         }
 
         function playChordFromPosition(posData) {
             initAudio(); 
-            const isJazz = jazzToggle.checked;
-            const isGuitar = guitarToggle.checked;
-            const isMinor = tonalityToggle.checked;
-
+            const isJazz = jazzToggle.checked; const isGuitar = guitarToggle.checked; const isMinor = tonalityToggle.checked;
             const modeData = isMinor ? posData.minor : posData.major;
             
-            updateInfoBar(`${modeData.roman} – ${modeData.desc}`);
+            const infoBar = document.getElementById('infoBar');
+            infoBar.innerHTML = `<div class="info-title" style="color:${modeData.color}">${modeData.roman}</div><div class="info-desc">${modeData.desc}</div>`;
 
             lastClickedRoman = modeData.roman;
-            drawConnections(lastClickedRoman);
+            redrawLines(); 
 
             let indexAtTop = safeMod(0 - currentStep, 12);
             const rootNoteName = notes[indexAtTop];
             const rootFreq = noteFrequencies[rootNoteName];
 
             let semitoneOffset = modeData.interval;
-            if (posData.index === 9 || posData.index === 11) {
-                semitoneOffset -= 12; 
-            }
+            if (posData.index === 9 || posData.index === 11) semitoneOffset -= 12; 
             
             const chordRootFreq = rootFreq * Math.pow(2, semitoneOffset / 12);
             const chordLabel = isJazz ? modeData.jazz.label : modeData.pop.label;
-            let intervals;
+            
+            let absRootIndex = safeMod(notes.indexOf(rootNoteName) + semitoneOffset, 12);
+            let absRootName = notes[absRootIndex];
+            currentChordLabelForVisualizer = `${absRootName}|${chordLabel}`;
 
-            if (isGuitar) {
-                intervals = getGuitarVoicing(chordLabel, modeData.roman, isJazz ? 'jazz' : 'pop');
-            } else {
-                intervals = isJazz ? modeData.jazz.ivs : modeData.pop.ivs;
-            }
+            let intervals;
+            if (isGuitar) intervals = getGuitarVoicingAudio(chordLabel);
+            else intervals = isJazz ? modeData.jazz.ivs : modeData.pop.ivs;
 
             const now = audioCtx.currentTime;
+            const playedNotesInfo = [];
 
             intervals.forEach((interval, i) => {
                 const toneFreq = chordRootFreq * Math.pow(2, interval / 12);
                 const strumDelay = isGuitar ? 0.06 : 0.03; 
                 playTone(toneFreq, isGuitar ? 'guitar' : 'piano', now + (i * strumDelay));
+                
+                let absNoteIdx = safeMod(notes.indexOf(rootNoteName) + semitoneOffset + interval, 12);
+                let octave = 4 + Math.floor((notes.indexOf(rootNoteName) + semitoneOffset + interval) / 12);
+                if (interval > 12) octave++; 
+                playedNotesInfo.push({ note: notes[absNoteIdx], freq: toneFreq, octave: octave });
             });
+            
+            lastPlayedNotes = playedNotesInfo;
+            drawNotation(playedNotesInfo);
+            if(isGuitar) drawGuitarChart(absRootName, chordLabel); else drawPiano(playedNotesInfo);
         }
 
+        // ... REST SAME AS V24 (playKeyCenter, Drag, Sequencer, Lines) ...
+        // (Copy from V24, function names match)
         function playKeyCenter() {
             if(isSequencerPlaying) return;
-            connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
-            lastClickedRoman = null;
-            
             const isMinor = tonalityToggle.checked;
             const targetIndex = isMinor ? 9 : 0;
             const targetPosData = wheelPositions.find(p => p && p.index === targetIndex);
-
             playChordFromPosition(targetPosData);
             const hub = document.querySelector('.center-hub');
             hub.style.transform = "translate(-50%, -50%) scale(0.9)";
             setTimeout(() => hub.style.transform = "translate(-50%, -50%) scale(1)", 100);
         }
-
         let isDragging = false; let startAngle = 0; let startRotation = 0;
         wheelContainer.addEventListener('mousedown', startDrag); window.addEventListener('mousemove', doDrag); window.addEventListener('mouseup', endDrag);
         wheelContainer.addEventListener('touchstart', startDrag, {passive: false}); window.addEventListener('touchmove', doDrag, {passive: false}); window.addEventListener('touchend', endDrag);
@@ -506,10 +699,10 @@
             const rect = wheelContainer.getBoundingClientRect(); return Math.atan2(y - (rect.top + rect.height / 2), x - (rect.left + rect.width / 2)) * (180 / Math.PI);
         }
         function startDrag(e) {
-            if(isSequencerPlaying || e.target.closest('.counter-rotator') || e.target.closest('.center-hub')) return;
+            if(isSequencerPlaying || e.target.closest('.segment-group') || e.target.closest('.center-hub')) return;
             isDragging = true; const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             startAngle = getAngle(clientX, clientY); startRotation = currentVisualAngle; outerWheel.style.transition = 'none'; 
-            connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
+            document.getElementById('connLayer').innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
         }
         function doDrag(e) {
             if (!isDragging) return; e.preventDefault(); const clientX = e.touches ? e.touches[0].clientX : e.clientX; const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -519,82 +712,75 @@
             if (!isDragging) return; isDragging = false; const snapAngle = Math.round(currentVisualAngle / 30) * 30; currentVisualAngle = snapAngle; currentStep = Math.round(snapAngle / 30); 
             outerWheel.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)'; setWheelRotation(currentVisualAngle); updateKeyCenter();
         }
-
+        function getCoordinatesForIndex(index, radius) {
+            const angleInRad = (index * 30 - 90) * (Math.PI / 180);
+            return { x: 180 + radius * Math.cos(angleInRad), y: 180 + radius * Math.sin(angleInRad) };
+        }
+        function redrawLines() { if (lastClickedRoman) drawConnections(lastClickedRoman); else document.getElementById('connLayer').innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>'; }
+        function drawConnections(sourceRoman) {
+            const connLayer = document.getElementById('connLayer');
+            if (!pathToggle.checked) { connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>'; return; }
+            connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
+            const isJazz = jazzToggle.checked; const isMinor = tonalityToggle.checked;
+            const targets = probabilityMap[isMinor?'minor':'major'][isJazz?'jazz':'pop'][sourceRoman];
+            const complexity = parseInt(complexitySlider.value);
+            if (!targets) return;
+            const sourceRef = segmentGroups.find(r => (isMinor?r.data.minor:r.data.major).roman === sourceRoman);
+            if(!sourceRef) return;
+            const startPos = getCoordinatesForIndex(sourceRef.data.index, 85);
+            targets.forEach(target => {
+                if (complexity === 1 && target[1] < 3) return; if (complexity === 2 && target[1] < 2) return;
+                const targetRef = segmentGroups.find(r => (isMinor?r.data.minor:r.data.major).roman === target[0]);
+                if(!targetRef) return;
+                const endPos = getCoordinatesForIndex(targetRef.data.index, 85);
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `M ${startPos.x} ${startPos.y} Q 180 180 ${endPos.x} ${endPos.y}`);
+                path.setAttribute("class", "conn-path"); path.setAttribute("stroke", "#ffffff");
+                path.setAttribute("stroke-width", target[1] === 3 ? 5 : (target[1] === 2 ? 2.5 : 1));
+                if (target[1] === 1) path.setAttribute("stroke-dasharray", "5,5");
+                if (target[1] > 1) path.setAttribute("marker-end", "url(#arrowhead)");
+                connLayer.appendChild(path);
+            });
+        }
         async function playProgression(progObj, btnElement) {
             if (isSequencerPlaying) return; isSequencerPlaying = true; btnElement.classList.add('playing'); 
-            connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
-            lastClickedRoman = null;
             const isMinor = tonalityToggle.checked;
-
             for (let roman of progObj.seq) {
-                const ref = segmentGroups.find(r => {
-                    const modeData = isMinor ? r.data.minor : r.data.major;
-                    return modeData.roman === roman;
-                });
+                const ref = segmentGroups.find(r => (isMinor ? r.data.minor : r.data.major).roman === roman);
                 if (ref) {
                     playChordFromPosition(ref.data);
-                    ref.group.classList.add('active');
-                    await wait(1200); 
-                    ref.group.classList.remove('active');
+                    ref.group.classList.add('active'); await wait(1200); ref.group.classList.remove('active');
                 }
             }
             isSequencerPlaying = false; btnElement.classList.remove('playing');
-            connLayer.innerHTML = '<defs><marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#ffffff" /></marker></defs>';
         }
-
         function renderProgressions() {
-            const isJazz = jazzToggle.checked;
-            const isMinor = tonalityToggle.checked;
-            const tonalityKey = isMinor ? 'minor' : 'major';
-            const styleKey = isJazz ? 'jazz' : 'pop';
-            const list = progressions[tonalityKey][styleKey];
-
+            const isJazz = jazzToggle.checked; const isMinor = tonalityToggle.checked;
+            const list = progressions[isMinor?'minor':'major'][isJazz?'jazz':'pop'];
             progContainer.innerHTML = ''; 
             list.forEach(prog => {
                 const btn = document.createElement('div'); btn.className = 'prog-btn';
-                btn.innerHTML = `<div class="prog-info"><span class="prog-title">${prog.name}</span><span class="prog-steps">${prog.seq.join(' – ')}</span><span class="prog-example">Bsp: ${prog.ex}</span></div><div>▶️</div>`;
+                btn.innerHTML = `<div class="prog-info"><span class="prog-title">${prog.name}</span><span class="prog-steps">${prog.seq.join(' – ')}</span></div><div>▶️</div>`;
                 btn.onclick = () => playProgression(prog, btn); progContainer.appendChild(btn);
             });
         }
-
         function updateUI() {
-            const isMinor = tonalityToggle.checked;
-            const isJazz = jazzToggle.checked;
-
+            const isMinor = tonalityToggle.checked; const isJazz = jazzToggle.checked;
             if(isMinor) innerWheel.classList.add('minor-mode'); else innerWheel.classList.remove('minor-mode');
             keyDisplay.style.color = isMinor ? '#4682B4' : '#333';
-
             segmentGroups.forEach(ref => {
                 const modeData = isMinor ? ref.data.minor : ref.data.major;
-                ref.romanSpan.innerText = modeData.roman;
-                ref.romanSpan.style.color = modeData.color;
-                ref.labelSpan.innerText = isJazz ? modeData.jazz.label : modeData.pop.label;
-                ref.labelSpan.style.color = modeData.color;
-                ref.iconImg.src = modeData.image;
-                ref.iconImg.alt = modeData.roman;
+                ref.romanSpan.innerText = modeData.roman; ref.romanSpan.style.color = modeData.color;
+                ref.labelSpan.innerText = isJazz ? modeData.jazz.label : modeData.pop.label; ref.labelSpan.style.color = modeData.color;
+                ref.iconImg.src = modeData.image; ref.iconImg.alt = modeData.roman;
             });
-
-            updateKeyCenter();
-            renderProgressions();
-            redrawLines(); 
+            updateKeyCenter(); renderProgressions(); redrawLines();
         }
-
         function updateKeyCenter() {
             let indexAtTop = safeMod(0 - currentStep, 12);
-            const keyNote = notes[indexAtTop];
             const isMinor = tonalityToggle.checked;
-            
-            if (isMinor) {
-                let minorRootIndex = safeMod(indexAtTop + 9, 12);
-                keyDisplay.innerText = notes[minorRootIndex] + "m";
-            } else {
-                keyDisplay.innerText = notes[indexAtTop];
-            }
+            keyDisplay.innerText = notes[isMinor ? safeMod(indexAtTop + 9, 12) : indexAtTop] + (isMinor ? "m" : "");
         }
-
-        setWheelRotation(0); 
-        updateUI(); 
-
     </script>
 </body>
 </html>
