@@ -1,23 +1,10 @@
-<!-- Version: v1.0.0 (2025-12-7) -->
+<!-- Version: v1.3.0 (2025-12-7) -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Harmonie Rad">
-    
-    <link rel="apple-touch-icon" href="icon.png">
-    
-    <link rel="manifest" href="manifest.json">
-
-    <title>Harmonie-Rad App</title>
-
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Harmonie-Rad V33 (Fix & Smart)</title>
+    <title>Harmonie-Rad V36 (Final Guitar Fix)</title>
     
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Gochi+Hand&display=swap" rel="stylesheet">
 
@@ -29,27 +16,27 @@
             min-height: 100vh; margin: 0; background-color: #f4f1ea; overflow: hidden; 
             user-select: none; -webkit-user-select: none; overscroll-behavior: none;
         }
-        h1 { margin: 5px 0; color: #333; font-size: 1.6rem; }
+        h1 { margin: 5px 0; color: #333; font-size: 1.5rem; }
 
         /* --- INFO BAR --- */
         .info-bar {
-            min-height: 55px; margin-bottom: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-            background-color: #222; color: #fff; width: 95%; max-width: 380px;
-            border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); padding: 5px 10px;
-            text-align: center; line-height: 1.2; border: 2px solid #444;
+            min-height: 50px; margin-bottom: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background-color: #222; color: #fff; width: 96%; max-width: 400px;
+            border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); padding: 5px 10px;
+            text-align: center; line-height: 1.1; border: 1px solid #444;
         }
-        .info-title { font-size: 1.3rem; font-weight: bold; color: #ffeb3b; }
-        .info-desc { font-size: 1rem; color: #ddd; font-family: sans-serif; letter-spacing: 0.5px; }
+        .info-title { font-size: 1.2rem; font-weight: bold; color: #ffeb3b; }
+        .info-desc { font-size: 0.9rem; color: #ddd; font-family: sans-serif; letter-spacing: 0.3px; }
 
         /* --- SETTINGS --- */
         .settings-panel {
-            background: #fff; padding: 5px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 5px;
-            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; border: 1px solid #ccc; z-index: 100; max-width: 380px;
+            background: #fff; padding: 5px 10px; border-radius: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 5px;
+            display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; border: 1px solid #ccc; z-index: 100; max-width: 400px; width: 96%;
         }
-        .toggle-group { display: flex; align-items: center; gap: 5px; font-size: 0.9rem; color: #555; }
-        .mode-label { display: flex; flex-direction: column; align-items: center; line-height: 0.8; font-size: 0.7rem; }
+        .toggle-group { display: flex; align-items: center; gap: 4px; font-size: 0.9rem; color: #555; }
+        .mode-label { display: flex; flex-direction: column; align-items: center; line-height: 0.8; font-size: 0.65rem; }
         .divider { width: 1px; background-color: #ddd; height: 20px; }
-        .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+        .switch { position: relative; display: inline-block; width: 32px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider-switch {
             position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 20px;
@@ -58,128 +45,139 @@
             position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%;
         }
         input:checked + .slider-switch { background-color: #333; }
-        input:checked + .slider-switch:before { transform: translateX(16px); }
+        input:checked + .slider-switch:before { transform: translateX(14px); }
         #tonalityToggle:checked + .slider-switch { background-color: #1a2a3a; }
-        input[type=range] { width: 60px; accent-color: #333; cursor: pointer; }
+        input[type=range] { width: 50px; accent-color: #333; cursor: pointer; }
 
-        /* --- WHEEL --- */
-        .wheel-container { position: relative; width: 280px; height: 280px; touch-action: none; margin-bottom: 5px; flex-shrink: 0; }
+        /* --- WHEEL CONTAINER --- */
+        .wheel-container { 
+            position: relative; width: 96vw; height: 96vw; max-width: 380px; max-height: 380px;
+            touch-action: none; margin-bottom: 5px; flex-shrink: 0; 
+        }
         .connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
-        .conn-path { fill: none; stroke-linecap: round; opacity: 0; animation: fadeInPath 0.4s forwards; }
-        @keyframes fadeInPath { to { opacity: 0.7; } }
+        .conn-path { 
+            fill: none; stroke-linecap: round; opacity: 0; animation: fadeInPath 0.4s forwards; 
+            filter: drop-shadow(0 0 2px rgba(0,0,0,0.8));
+        }
+        @keyframes fadeInPath { to { opacity: 0.8; } }
 
         .disc { position: absolute; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
-        .outer-disc { width: 280px; height: 280px; background-color: #fff; z-index: 1; border: 2px solid #333; cursor: grab; }
+        .outer-disc { width: 100%; height: 100%; background-color: #fff; z-index: 1; border: 1px solid #999; cursor: grab; }
         .outer-disc:active { cursor: grabbing; }
-        .inner-disc { width: 180px; height: 180px; background-color: #2b2b2b; color: #fff; z-index: 2; border: 3px solid #fff; pointer-events: none; transition: background-color 0.5s ease; }
+        
+        .inner-disc { 
+            width: 82%; height: 82%; background-color: #2b2b2b; color: #fff; z-index: 2; 
+            border: 2px solid #fff; pointer-events: none; transition: background-color 0.5s ease; 
+        }
         .inner-disc.minor-mode { background-color: #1a2a3a; border-color: #a0e6ff; }
 
         .center-hub {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55px; height: 55px; background-color: #fff; border-radius: 50%; z-index: 10; 
-            border: 3px solid #333; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: transform 0.1s;
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 18%; height: 18%; 
+            background-color: #fff; border-radius: 50%; z-index: 10; border: 3px solid #333; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1); pointer-events: auto; cursor: pointer; transition: transform 0.1s;
         }
         .center-hub:active { transform: translate(-50%, -50%) scale(0.95); }
-        .center-label { font-size: 0.6rem; color: #666; pointer-events: none;}
-        .center-key { font-size: 1.3rem; font-weight: bold; color: #333; line-height: 1; margin-top: 1px; pointer-events: none;}
+        .center-label { font-size: 0.7rem; color: #666; pointer-events: none; margin-bottom:-2px;}
+        .center-key { font-size: 1.5rem; font-weight: bold; color: #333; line-height: 1; pointer-events: none;}
 
-        .segment-group { position: absolute; width: 30px; height: 50%; top: 0; left: 50%; margin-left: -15px; transform-origin: bottom center; pointer-events: none; z-index: 5; transition: transform 0.1s; }
-        .segment-group.active .pos-roman, .segment-group.active .pos-icon { transform: scale(1.3); filter: brightness(1.3) drop-shadow(0 0 5px white); transition: all 0.2s ease-out; }
-        .counter-rotator { position: absolute; width: 30px; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; transition: transform 0.3s; }
+        .segment-group { position: absolute; width: 40px; height: 50%; top: 0; left: 50%; margin-left: -20px; transform-origin: bottom center; pointer-events: none; z-index: 5; transition: transform 0.1s; }
+        
+        .segment-group.active .pos-roman, .segment-group.active .pos-icon { 
+            transform: scale(1.3); filter: brightness(2.0) drop-shadow(0 0 8px #fff); transition: all 0.1s ease-out; 
+        }
+        .segment-group:active .pos-roman, .segment-group:active .pos-icon { transform: scale(0.9); transition: transform 0.1s; }
+
+        .counter-rotator { position: absolute; width: 40px; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; transition: transform 0.3s; }
         .outer-segment { position: absolute; width: 50px; height: 50%; top: 0; left: 50%; margin-left: -25px; transform-origin: bottom center; pointer-events: none; }
         .outer-rotator { position: absolute; width: 50px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
 
-        .pos-note { top: 8px; height: 30px; }
-        .note-text { font-size: 1.3rem; font-weight: bold; color: #333; }
-        .pos-roman { top: 5px; height: 25px; flex-direction: column; }
-        .roman-text { font-size: 1.1rem; font-weight: bold; line-height: 1; transition: color 0.3s; }
-        .quality-text { font-size: 0.7rem; opacity: 0.8; margin-top: -2px; transition: color 0.3s; }
-        .pos-icon { top: 30px; height: 35px; } 
-        .icon-img { max-width: 24px; max-height: 24px; width: auto; height: auto; object-fit: contain; display: block; transition: filter 0.3s; }
-        .marker { position: absolute; top: -15px; left: 50%; transform: translateX(-50%); z-index: 10; width: 0; height: 0; border-left: 15px solid transparent; border-right: 15px solid transparent; border-top: 18px solid #d32f2f; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
+        /* Larger Text & Icons */
+        .pos-note { top: 4%; height: 30px; }
+        .note-text { font-size: 1.5rem; font-weight: bold; color: #333; }
+        
+        .pos-roman { top: 5%; height: 35px; flex-direction: column; }
+        .roman-text { font-size: 1.5rem; font-weight: bold; line-height: 1; transition: color 0.3s; }
+        .quality-text { font-size: 0.8rem; opacity: 0.9; margin-top: -3px; transition: color 0.3s; }
+        
+        /* FIX: Größere Icons */
+        .pos-icon { top: 19%; height: 50px; } 
+        .icon-img { max-width: 45px; max-height: 45px; width: auto; height: auto; object-fit: contain; display: block; transition: filter 0.3s; }
+        
+        .marker { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); z-index: 10; width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 15px solid #d32f2f; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
 
         /* --- DASHBOARD --- */
         .dashboard {
-            width: 100%; max-width: 380px; background: #fff; border: 1px solid #ccc; border-radius: 10px; margin-bottom: 5px;
+            width: 96%; max-width: 400px; background: #fff; border: 1px solid #ccc; border-radius: 10px; margin-bottom: 5px;
             display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
         }
-        .viz-container { display: flex; height: 120px; } 
+        .viz-container { display: flex; height: 110px; } 
         .viz-part { flex: 1; display: flex; justify-content: center; align-items: center; position: relative; }
         .viz-part.notation { flex: 0.4; background-color: #fffcf5; }
         .viz-part.instrument { flex: 0.6; }
         .viz-divider { width: 1px; background: #eee; }
 
-        /* REAL BOOK NOTATION */
         #notationSvg { width: 100%; height: 100%; overflow: visible; }
         .staff-line { stroke: #222; stroke-width: 1.5; stroke-linecap: round; opacity: 0.8; }
         .staff-line.ledger { opacity: 0.6; stroke-width: 1.5; }
         .jazz-note { fill: #111; transform-box: fill-box; transform-origin: center; transform: rotate(-15deg); }
         .jazz-stem { stroke: #111; stroke-width: 2.5; stroke-linecap: round; }
-        .clef { font-family: 'Gochi Hand', cursive; font-size: 90px; fill: #111; }
-        .accidental { font-family: 'Gochi Hand', cursive; font-size: 22px; fill: #111; font-weight: bold; }
-        .octave-marker { font-family: 'Gochi Hand', cursive; font-size: 16px; fill: #444; font-style: italic; }
+        .clef { font-family: 'Gochi Hand', cursive; font-size: 80px; fill: #111; }
+        .accidental { font-family: 'Gochi Hand', cursive; font-size: 20px; fill: #111; font-weight: bold; }
+        .octave-marker { font-family: 'Gochi Hand', cursive; font-size: 14px; fill: #444; font-style: italic; }
         .octave-line { stroke: #444; stroke-width: 1; stroke-dasharray: 4,4; }
+        .instrument-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 2px; font-family: 'Patrick Hand', cursive; color: #333; }
 
-        /* COMMON INSTRUMENT STYLES */
-        .instrument-title { font-weight: bold; font-size: 1.3rem; margin-bottom: 5px; font-family: 'Patrick Hand', cursive; color: #333; }
-
-        /* --- GUITAR CHART (FIX: Centered Dots) --- */
-        .chord-chart {
-            width: 90px; height: 100px; display: flex; flex-direction: column; align-items: center;
-        }
-        .chart-name { font-weight: bold; font-size: 1.2rem; margin-bottom: 2px; }
+        /* GUITAR CHART (FIXED) */
+        .chord-chart { width: 80px; height: 95px; display: flex; flex-direction: column; align-items: center; }
+        .chart-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 2px; }
         
+        /* Das Gitter hat jetzt KEINE seitlichen Borders mehr im CSS, 
+           da die Saiten selbst die Linien sind. Nur Top/Bottom für Orientierung */
         .chart-grid {
-            position: relative; width: 60px; height: 70px;
-            /* Border only Top/Bottom/Outer, not inside */
+            position: relative; width: 60px; height: 65px;
+            /* FIX: Keine Border Left/Right mehr, nur Top */
             border-top: 4px solid #222; /* Nut */
+            border-bottom: 1px solid #ccc; /* Optional bottom */
             display: flex;
-            justify-content: space-between; /* Verteilt Saiten */
+            justify-content: space-between;
         }
         .chart-grid.fret { border-top: 2px solid #222; }
 
-        /* String is a container */
+        /* Die Saite ist der Container, die Linie ist das ::after Element */
         .chart-string {
             position: relative; width: 1px; height: 100%;
             display: flex; justify-content: center;
         }
-        /* The actual string line */
+        /* Die eigentliche Saiten-Linie, exakt mittig */
         .chart-string::after {
-            content: ''; position: absolute; top: 0; bottom: 0; left: 50%;
-            border-left: 1px solid #222;
+            content: ''; position: absolute; top: 0; bottom: 0; 
+            width: 1px; background: #222; 
         }
         
-        /* Frets (Horizontal lines) */
-        .chart-fret-line {
-            position: absolute; left: 0; right: 0; height: 1px; background: #222; z-index: 0;
-        }
+        /* Bünde liegen dahinter */
+        .chart-fret-line { position: absolute; left: 0; right: 0; height: 1px; background: #222; z-index:0; }
         
-        /* Dots centered on string */
+        /* Punkt sitzt exakt auf der Mitte des Containers (der Saite) */
         .chart-dot {
             position: absolute; width: 11px; height: 11px; background: #111; border-radius: 50%;
-            /* Exact Center */
             left: 50%; transform: translate(-50%, -50%); z-index: 2;
         }
         .chart-dot.root { background: #d32f2f; }
+        .chart-marker { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #222; font-weight: bold; }
+        .fret-offset-label { position: absolute; top: 0; left: -22px; font-size: 0.9rem; font-weight: bold; }
 
-        .chart-marker {
-            position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
-            font-size: 12px; color: #222; font-weight: bold;
-        }
-        .fret-offset-label { position: absolute; top: 0; left: -25px; font-size: 1rem; font-weight: bold; }
-
-        /* PIANO */
         .piano-container { display: flex; flex-direction: column; align-items: center; width: 100%; justify-content: center; }
-        .piano-keys { display: flex; height: 70px; position: relative; margin-top: 5px; }
+        .piano-keys { display: flex; height: 65px; position: relative; margin-top: 5px; }
         .key { border: 1px solid #555; border-top: none; border-radius: 0 0 3px 3px; position: relative; }
-        .key.white { width: 18px; background: #fff; height: 100%; z-index: 1; }
-        .key.black { width: 12px; background: #333; height: 60%; margin-left: -6px; margin-right: -6px; z-index: 2; }
+        .key.white { width: 16px; background: #fff; height: 100%; z-index: 1; }
+        .key.black { width: 10px; background: #333; height: 60%; margin-left: -5px; margin-right: -5px; z-index: 2; }
         .key.active { background: #fbc02d !important; border-bottom: 3px solid #f57f17; } 
         .key.root { background: #d32f2f !important; border-bottom: 3px solid #b71c1c; } 
 
-        /* PROGRESSION */
-        .progression-container { width: 100%; max-width: 380px; padding: 0 10px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
+        .progression-container { width: 96%; max-width: 400px; padding: 0 5px 10px 5px; display: flex; flex-direction: column; gap: 6px; }
         .prog-btn {
-            background: white; border: 1px solid #ccc; border-radius: 8px; padding: 5px 12px; text-align: left; cursor: pointer; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; height: 50px;
+            background: white; border: 1px solid #ccc; border-radius: 8px; padding: 5px 12px; text-align: left; cursor: pointer; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; height: 45px;
         }
         .prog-btn:hover { background: #f9f9f9; border-color: #999; }
         .prog-btn.playing { border-color: #333; background: #eee; cursor: wait;}
@@ -189,6 +187,15 @@
     </style>
 </head>
 <body>
+    
+    <div id="startOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+        <h1 style="font-size:2.5rem; margin-bottom:10px;">Harmonie-Rad</h1>
+        <p style="font-size:1.2rem; color:#666; margin-bottom:30px;">Spannungen zwischen Akkorden erforschen.</p>
+        <button id="startBtn" style="padding:15px 40px; font-size:1.5rem; background:#333; color:white; border:none; border-radius:50px; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
+            Starten ▶️
+        </button>
+        <p style="font-size:0.8rem; color:#999; margin-top:30px;">(Stummschalter deaktivieren!)</p>
+    </div>
 
     <h1>Harmonie-Rad</h1>
 
@@ -237,7 +244,7 @@
                     <line x1="10" y1="60" x2="150" y2="60" class="staff-line" />
                     <line x1="10" y1="70" x2="150" y2="70" class="staff-line" />
                     <line x1="10" y1="80" x2="150" y2="80" class="staff-line" />
-                    <text x="10" y="88" class="clef">𝄞</text>
+                    <text x="10" y="78" class="clef">𝄞</text>
                     <g id="notesGroup"></g> 
                 </svg>
             </div>
@@ -276,18 +283,32 @@
         const colorsMinor = { tonic: "#4682B4", tonicParallel: "#89CFF0", subdom: "#87CEEB", subdomParallel: "#B0E0E6", dom: "#5A9BD4", dim: "#B0C4DE" };
 
         const wheelPositions = [
-            { index: 0, major: { roman: "I", desc: "Zuhause. Ruhe.", emoji: "🏠", image: "haus.png", color: colorsMajor.tonic, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} }, minor: { roman: "bIII", desc: "Ferienhaus (Dur).", emoji: "🏡", image: "ferienhaus.png", color: colorsMinor.tonicParallel, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+            { index: 0, 
+              major: { roman: "I", desc: "Zuhause. Der Ruhepol.", emoji: "🏠", image: "haus.png", color: colorsMajor.tonic, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
+              minor: { roman: "bIII", desc: "Das Ferienhaus (Dur-Parallele). Hell.", emoji: "🏡", image: "ferienhaus.png", color: colorsMinor.tonicParallel, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
-            { index: 2, major: { roman: "II", desc: "Brücke zur V.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} }, minor: { roman: "iv", desc: "Kleine Brücke.", emoji: "🌉", image: "bruecke.png", color: colorsMinor.subdom, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
+            { index: 2, 
+              major: { roman: "II", desc: "Die Brücke zur Spannung (V).", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              minor: { roman: "iv", desc: "Kleine Brücke. Zieht zur V.", emoji: "🌉", image: "bruecke.png", color: colorsMinor.subdom, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
-            { index: 4, major: { roman: "III", desc: "Moll-Dominante.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} }, minor: { roman: "V", desc: "Vulkan! Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
-            { index: 5, major: { roman: "IV", desc: "Aufbruch.", emoji: "⛰️", image: "berg_klein.png", color: colorsMajor.subdom, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} }, minor: { roman: "bVI", desc: "Höhepunkt.", emoji: "⛰️", image: "berg_klein.png", color: colorsMinor.subdomParallel, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+            { index: 4, 
+              major: { roman: "III", desc: "Moll-Dominante. Führt zur VI.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              minor: { roman: "V", desc: "Der Vulkan! Will nach Hause (i).", emoji: "🌋", image: "berg_gross.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+            { index: 5, 
+              major: { roman: "IV", desc: "Kleiner Ausflug. Aufbruch.", emoji: "⛰️", image: "berg_klein.png", color: colorsMajor.subdom, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
+              minor: { roman: "bVI", desc: "Dramatischer Höhepunkt.", emoji: "⛰️", image: "berg_klein.png", color: colorsMinor.subdomParallel, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
-            { index: 7, major: { roman: "V", desc: "Vulkan. Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} }, minor: { roman: "bVII", desc: "Hintertür.", emoji: "🌳", image: "bank.png", color: colorsMinor.dim, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+            { index: 7, 
+              major: { roman: "V", desc: "Der Vulkan. Maximale Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} },
+              minor: { roman: "bVII", desc: "Hintertür zum Ferienhaus.", emoji: "🌳", image: "bank.png", color: colorsMinor.dim, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
-            { index: 9, major: { roman: "VI", desc: "Moll-Parallele.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} }, minor: { roman: "i", desc: "Moll-Zuhause.", emoji: "🏠", image: "haus.png", color: colorsMinor.tonic, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
+            { index: 9, 
+              major: { roman: "VI", desc: "Moll-Parallele. Etwas traurig.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              minor: { roman: "i", desc: "Moll-Zuhause. Melancholisch.", emoji: "🏠", image: "haus.png", color: colorsMinor.tonic, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
-            { index: 11, major: { roman: "VII", desc: "Klippe.", emoji: "⚡", image: "klippe.png", color: colorsMajor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} }, minor: { roman: "ii°", desc: "Vorbereiter.", emoji: "⚡", image: "klippe.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
+            { index: 11, 
+              major: { roman: "VII", desc: "Die Klippe. Sehr instabil.", emoji: "⚡", image: "klippe.png", color: colorsMajor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} },
+              minor: { roman: "ii°", desc: "Vorbereiter der Spannung.", emoji: "⚡", image: "klippe.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
         ];
 
         const probabilityMap = {
@@ -303,7 +324,7 @@
 
         const progressions = {
             major: {
-                pop: [ { name: "Axis of Awesome", seq: ["I", "V", "VI", "IV"], ex: "Let It Be" }, { name: "50s Ballade", seq: ["I", "VI", "IV", "V"], ex: "Stand By Me" }, { name: "Pop Standard", seq: ["VI", "IV", "I", "V"], ex: "Africa" } ],
+                pop: [ { name: "Pop Klassiker", seq: ["I", "IV", "V", "IV"], ex: "La Bamba / Wild Thing" }, { name: "Axis of Awesome", seq: ["I", "V", "VI", "IV"], ex: "Let It Be" }, { name: "Pop Standard", seq: ["VI", "IV", "I", "V"], ex: "Africa" } ],
                 jazz: [ { name: "The Jazz DNA", seq: ["II", "V", "I"], ex: "Satin Doll" }, { name: "Turnaround", seq: ["I", "VI", "II", "V"], ex: "I Got Rhythm" }, { name: "Moll-Kadenz", seq: ["VII", "III", "VI"], ex: "Autumn Leaves" } ]
             },
             minor: {
@@ -326,6 +347,8 @@
         const infoBar = document.getElementById('infoBar');
         const instrumentContainer = document.getElementById('instrumentContainer');
         const notesGroup = document.getElementById('notesGroup');
+        const startOverlay = document.getElementById('startOverlay');
+        const startBtn = document.getElementById('startBtn');
         
         const counterRotatingElements = [];
         const segmentGroups = []; 
@@ -336,13 +359,28 @@
         let currentChordLabelForVisualizer = "";
         let currentRootNoteName = "";
 
-        document.addEventListener('DOMContentLoaded', () => {
+        startBtn.addEventListener('click', async () => {
+            initAudio();
+            if (audioCtx) {
+                try {
+                    await audioCtx.resume();
+                    const buffer = audioCtx.createBuffer(1, 1, 22050);
+                    const source = audioCtx.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(audioCtx.destination);
+                    source.start(0);
+                } catch (e) { console.error(e); }
+            }
+            startOverlay.style.opacity = '0';
+            setTimeout(() => { startOverlay.style.display = 'none'; }, 500);
             initWheel();
             setWheelRotation(0);
             updateUI();
         });
 
         function initWheel() {
+            if(outerWheel.children.length > 0) return;
+            
             notes.forEach((note, index) => {
                 const segment = document.createElement('div');
                 segment.className = 'outer-segment'; 
@@ -405,7 +443,6 @@
         function drawNotation(playedNotes) {
             notesGroup.innerHTML = '';
             
-            // AUTO SHIFT LOGIC (8va / 8vb)
             let avgPitch = playedNotes.reduce((acc, n) => acc + getMidiPitch(n), 0) / playedNotes.length;
             let octaveShift = 0; 
             if(avgPitch < 55) octaveShift = -1; 
@@ -426,7 +463,6 @@
                 notesGroup.appendChild(markerText); notesGroup.appendChild(markerLine);
             }
 
-            // FIX: START X POSITION
             let xPos = 70;
             let notesToDraw = JSON.parse(JSON.stringify(playedNotes));
             notesToDraw.sort((a,b) => getMidiPitch(a) - getMidiPitch(b));
@@ -436,7 +472,6 @@
                 let baseVal = noteIndexMap[n.note.replace('#','')]; 
                 let octDiff = visualOctave - 4; 
                 let y = 90 - (octDiff * 35) - (baseVal * 5); 
-
                 let currentX = xPos;
 
                 if (y >= 90 || y <= 30) {
@@ -454,7 +489,7 @@
                     stem.setAttribute("y1", y); stem.setAttribute("y2", y + 28);
                 } else { 
                     stem.setAttribute("x1", currentX + 5); stem.setAttribute("x2", currentX + 5);
-                    stem.setAttribute("y1", y); stem.setAttribute("y2", y - 25);
+                    stem.setAttribute("y1", y); stem.setAttribute("y2", y - 28);
                 }
                 stem.setAttribute("class", "jazz-stem");
                 notesGroup.appendChild(stem);
@@ -469,7 +504,7 @@
                 if (n.note.includes("#")) {
                     const sharp = document.createElementNS("http://www.w3.org/2000/svg", "text");
                     sharp.setAttribute("class", "accidental");
-                    sharp.setAttribute("x", currentX - 18); sharp.setAttribute("y", y + 6); 
+                    sharp.setAttribute("x", currentX - 16); sharp.setAttribute("y", y + 6); 
                     sharp.textContent = "♯";
                     notesGroup.appendChild(sharp);
                 }
@@ -550,25 +585,35 @@
             instrumentContainer.appendChild(chart);
         }
 
-        // SMART PIANO LOGIC
+        // PIANO
         function drawPiano(vizNotes, chordLabelFull) {
             instrumentContainer.innerHTML = '';
             const container = document.createElement('div'); container.className = 'piano-container';
             
             const title = document.createElement('div');
-            title.className = 'instrument-title'; title.innerHTML = chordLabelFull;
+            title.className = 'instrument-title'; 
+            
+            let displayLabel = chordLabelFull;
+            const parts = currentChordLabelForVisualizer.split("|");
+            const root = parts[0];
+            const quality = parts[1];
+            if (quality === "Dur") displayLabel = root;
+            else if (quality === "Moll") displayLabel = root + "m";
+            else if (quality === "Verm.") displayLabel = root + "°";
+            else displayLabel = root + quality;
+            
+            title.innerHTML = displayLabel;
             container.appendChild(title);
 
             const pianoDiv = document.createElement('div'); pianoDiv.className = 'piano-keys';
             const pattern = ['w','b','w','b','w','w','b','w','b','w','b','w'];
             
-            // Find start octave based on lowest note
             let minMidi = 999;
             vizNotes.forEach(n => {
                let m = (n.octave + 1) * 12 + noteIndexMap[n.note.replace('#','')];
                if(m < minMidi) minMidi = m;
             });
-            let startOctave = Math.floor(minMidi / 12) - 1; // Relative to C0
+            let startOctave = Math.floor(minMidi / 12) - 1; 
 
             for(let oct=0; oct<2; oct++) {
                 const currentOctave = startOctave + oct;
@@ -631,6 +676,8 @@
                 default: return [0, 4, 7]; 
             }
         }
+
+        let currentVizNotes = [];
 
         function playChordFromPosition(posData) {
             initAudio(); 
@@ -708,6 +755,7 @@
             hub.style.transform = "translate(-50%, -50%) scale(0.9)";
             setTimeout(() => hub.style.transform = "translate(-50%, -50%) scale(1)", 100);
         }
+
         let isDragging = false; let startAngle = 0; let startRotation = 0;
         wheelContainer.addEventListener('mousedown', startDrag); window.addEventListener('mousemove', doDrag); window.addEventListener('mouseup', endDrag);
         wheelContainer.addEventListener('touchstart', startDrag, {passive: false}); window.addEventListener('touchmove', doDrag, {passive: false}); window.addEventListener('touchend', endDrag);
