@@ -1,10 +1,9 @@
-<!-- Version: v1.41.0 (2025-12-7) -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Harmonie-Rad V41 (Reset Button)</title>
+    <title>Harmonie-Rad V44 (Mystic Edition)</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -18,9 +17,34 @@
         body {
             font-family: 'Patrick Hand', cursive; display: flex; flex-direction: column; align-items: center; 
             min-height: 100vh; margin: 0; background-color: #f4f1ea; overflow-y: auto; 
-            user-select: none; -webkit-user-select: none; padding-bottom: 80px;
+            user-select: none; -webkit-user-select: none; padding-bottom: 100px;
         }
         h1 { margin: 5px 0; color: #333; font-size: 1.5rem; }
+
+        /* --- START OVERLAY (LEGEND) - DARK MODE --- */
+        #startOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            /* FIX: Dark Background for visibility */
+            background: #1a2a3a; color: #fff; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; 
+            padding: 20px; overflow-y: auto;
+        }
+        #startOverlay h1 { color: #fff; } /* Headline White */
+        #startOverlay p { color: #ccc !important; } /* Subtext Light Grey */
+
+        .legend-grid {
+            display: grid; grid-template-columns: 60px 1fr; gap: 10px; text-align: left; margin: 20px 0; max-width: 500px;
+        }
+        .legend-icon { display: flex; justify-content: center; align-items: center; }
+        .legend-icon img { width: 45px; height: 45px; object-fit: contain; }
+        
+        .legend-text { font-size: 1.1rem; color: #eee; line-height: 1.3; display: flex; align-items: center; }
+        
+        #startBtn {
+            padding: 15px 50px; font-size: 1.5rem; background: #ffeb3b; color: #333; /* Yellow Button for Contrast */
+            border: none; border-radius: 50px; cursor: pointer; margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: 'Patrick Hand', cursive; font-weight: bold;
+        }
 
         /* --- INFO BAR --- */
         .info-bar {
@@ -59,7 +83,8 @@
             touch-action: none; margin-bottom: 5px; flex-shrink: 0; 
         }
         .connections-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
-        .conn-path { fill: none; stroke-linecap: round; opacity: 0; animation: fadeInPath 0.4s forwards; filter: drop-shadow(0 0 2px rgba(0,0,0,0.8)); }
+        
+        .conn-path { fill: none; stroke-linecap: round; opacity: 0; animation: fadeInPath 0.4s forwards; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); }
         @keyframes fadeInPath { to { opacity: 0.8; } }
 
         .disc { position: absolute; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; justify-content: center; align-items: center; box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
@@ -80,6 +105,7 @@
 
         .segment-group { position: absolute; width: 40px; height: 50%; top: 0; left: 50%; margin-left: -20px; transform-origin: bottom center; pointer-events: none; z-index: 5; transition: transform 0.1s; }
         .segment-group.active .pos-roman, .segment-group.active .pos-icon { transform: scale(1.3); filter: brightness(2.0) drop-shadow(0 0 8px #fff); transition: all 0.1s ease-out; }
+        
         .counter-rotator { position: absolute; width: 40px; display: flex; justify-content: center; align-items: center; pointer-events: auto; cursor: pointer; transition: transform 0.3s; }
         .outer-segment { position: absolute; width: 50px; height: 50%; top: 0; left: 50%; margin-left: -25px; transform-origin: bottom center; pointer-events: none; }
         .outer-rotator { position: absolute; width: 50px; display: flex; justify-content: center; align-items: center; pointer-events: none; }
@@ -89,7 +115,8 @@
         .pos-roman { top: 5%; height: 35px; flex-direction: column; }
         .roman-text { font-size: 1.5rem; font-weight: bold; line-height: 1; transition: color 0.3s; }
         .quality-text { font-size: 0.8rem; opacity: 0.9; margin-top: -3px; transition: color 0.3s; }
-        .pos-icon { top: 19%; height: 50px; } 
+        
+        .pos-icon { top: 22%; height: 50px; } 
         .icon-img { max-width: 45px; max-height: 45px; width: auto; height: auto; object-fit: contain; display: block; transition: filter 0.3s; }
         .marker { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); z-index: 10; width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 15px solid #d32f2f; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
 
@@ -109,8 +136,8 @@
         .staff-line.ledger { opacity: 0.6; stroke-width: 1.5; }
         .jazz-note { fill: #111; transform-box: fill-box; transform-origin: center; transform: rotate(-15deg); }
         .jazz-stem { stroke: #111; stroke-width: 2.5; stroke-linecap: round; }
-        .clef { font-family: 'Gochi Hand', cursive; font-size: 80px; fill: #111; }
-        .accidental { font-family: 'Gochi Hand', cursive; font-size: 20px; fill: #111; font-weight: bold; }
+        .clef { font-family: 'Gochi Hand', cursive; font-size: 90px; fill: #111; }
+        .accidental { font-family: 'Gochi Hand', cursive; font-size: 22px; fill: #111; font-weight: bold; }
         .octave-marker { font-family: 'Gochi Hand', cursive; font-size: 14px; fill: #444; font-style: italic; }
         .octave-line { stroke: #444; stroke-width: 1; stroke-dasharray: 4,4; }
         .instrument-title { font-weight: bold; font-size: 1.2rem; margin-bottom: 2px; font-family: 'Patrick Hand', cursive; color: #333; }
@@ -123,7 +150,9 @@
         .chart-string::after { content: ''; position: absolute; top: 0; bottom: 0; width: 1px; background: #222; }
         .chart-fret-line { position: absolute; left: 0; right: 0; height: 1px; background: #222; z-index:0; }
         .chart-dot { position: absolute; width: 11px; height: 11px; background: #111; border-radius: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; }
-        .chart-dot.root { background: #d32f2f; }
+        
+        /* FIX: Static high-contrast color for Root */
+        .chart-dot.root { background: #ff6b6b; box-shadow: 0 0 3px rgba(0,0,0,0.4); } 
         .chart-marker { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #222; font-weight: bold; }
         .fret-offset-label { position: absolute; top: 0; left: -22px; font-size: 0.9rem; font-weight: bold; }
 
@@ -133,12 +162,14 @@
         .key.white { width: 16px; background: #fff; height: 100%; z-index: 1; }
         .key.black { width: 10px; background: #333; height: 60%; margin-left: -5px; margin-right: -5px; z-index: 2; }
         .key.active { background: #fbc02d !important; border-bottom: 3px solid #f57f17; } 
-        .key.root { background: #d32f2f !important; border-bottom: 3px solid #b71c1c; } 
+        
+        /* FIX: Static high-contrast color for Root on Piano */
+        .key.root { background: #ff6b6b !important; border-bottom: 3px solid #d32f2f; } 
 
         /* PROGRESSION CONTAINER */
         .progression-container { width: 96%; max-width: 400px; padding: 0 5px 20px 5px; display: flex; flex-direction: column; gap: 6px; }
         
-        /* SEARCH BAR with RESET BUTTON */
+        /* SEARCH BAR */
         .search-wrapper { position: relative; width: 100%; margin-bottom: 5px; }
         .search-input {
             width: 100%; padding: 10px 40px 10px 40px; 
@@ -149,15 +180,22 @@
         .search-input:focus { border-color: #333; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 1.2rem; color: #888; }
         
-        /* THE X BUTTON */
         .clear-icon {
             position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
             font-size: 1.1rem; color: #999; cursor: pointer;
             width: 24px; height: 24px; line-height: 24px; text-align: center;
-            border-radius: 50%; background: #eee;
-            display: none; /* Hidden by default */
+            border-radius: 50%; background: #eee; display: none;
         }
-        .clear-icon:hover { background: #ccc; color: #333; }
+
+        /* REPLAY CARD */
+        .replay-card {
+            background: #fff9c4; border: 1px solid #fbc02d; border-radius: 10px; padding: 10px;
+            margin-bottom: 10px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            animation: slideDown 0.3s ease;
+        }
+        @keyframes slideDown { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+        .replay-title { font-weight: bold; font-size: 1.1rem; color: #333; }
+        .replay-hint { font-size: 0.8rem; color: #666; }
 
         .prog-btn {
             background: white; border: 1px solid #ccc; border-radius: 8px; padding: 5px 12px; text-align: left; cursor: pointer; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; min-height: 50px;
@@ -171,13 +209,28 @@
 </head>
 <body>
     
-    <div id="startOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.98); z-index:9999; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
-        <h1 style="font-size:2.5rem; margin-bottom:10px;">Harmonie-Rad</h1>
-        <p style="font-size:1.2rem; color:#666; margin-bottom:30px;">Dein Begleiter für Musiktheorie.</p>
-        <button id="startBtn" style="padding:15px 40px; font-size:1.5rem; background:#333; color:white; border:none; border-radius:50px; cursor:pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.2);">
-            Starten ▶️
-        </button>
-        <p style="font-size:0.8rem; color:#999; margin-top:30px;">(Bitte Stummschalter deaktivieren)</p>
+    <div id="startOverlay">
+        <h1 style="font-size:2.5rem; margin-bottom:10px;">Harmony Wheel</h1>
+        <p style="font-size:1.1rem; color:#666; margin-bottom:20px; text-align:center;">
+            Erforsche Akkorde und ihre Beziehung intuitiv!
+        </p>
+        
+        <div class="legend-grid">
+            <div class="legend-icon"><img src="haus.png" alt="Haus"></div>
+            <div class="legend-text"><strong>Das Zuhause (Tonika):</strong><br>Hier startet der Song und hier endet er meistens. Ein Ort der Ruhe.</div>
+            
+            <div class="legend-icon"><img src="bruecke.png" alt="Brücke"></div>
+            <div class="legend-text"><strong>Die Brücke:</strong><br>Führt uns weg vom Zuhause hin zu spannenderen Orten.</div>
+            
+            <div class="legend-icon"><img src="berg_klein.png" alt="Kleiner Berg"></div>
+            <div class="legend-text"><strong>Kleiner Berg:</strong><br>Ein schöner Ausflug, weg vom Alltag mit kleinem Zug nach Hause oder woanders hin.</div>
+            
+            <div class="legend-icon"><img src="berg_gross.png" alt="Großer Berg"></div>
+            <div class="legend-text"><strong>Großer Berg (Dominante):</strong><br>Maximale Spannung mit viel Heimweh! Von hier aus will man meist wieder nach Hause.</div>
+        </div>
+
+        <button id="startBtn">Starten ▶️</button>
+        <p style="font-size:0.8rem; color:#888; margin-top:20px;">(Stummschalter deaktivieren)</p>
     </div>
 
     <h1>Harmonie-Rad</h1>
@@ -239,9 +292,10 @@
     <div class="progression-container">
         <div class="search-wrapper">
             <span class="search-icon">🔍</span>
-            <input type="text" id="songSearch" class="search-input" placeholder="Song suchen (z.B. Beatles)..." oninput="filterSongs()">
+            <input type="text" id="songSearch" class="search-input" placeholder="Song suchen..." onfocus="showAllSongs()" oninput="filterSongs()">
             <span class="clear-icon" id="clearBtn" onclick="clearSearch()">✖</span>
         </div>
+        <div id="replayArea"></div>
         <div id="progList"></div>
     </div>
 
@@ -254,6 +308,7 @@
         const noteIndexMap = {}; notes.forEach((n,i) => noteIndexMap[n] = i);
         const guitarBaseStrings = [4, 9, 2, 7, 11, 4];
 
+        // Standard Guitar Chords
         const guitarChordLibrary = {
             "C": [-1, 3, 2, 0, 1, 0], "Cm": [-1, 3, 5, 5, 4, 3], "Cmaj7": [-1, 3, 2, 0, 0, 0], "C7": [-1, 3, 2, 3, 1, 0],
             "Db": [-1, 4, 6, 6, 6, 4], "Dbm": [-1, 4, 6, 6, 5, 4], "Dbmaj7": [-1, 4, 6, 5, 6, 4], "Db7": [-1, 4, 6, 4, 6, 4],
@@ -270,41 +325,57 @@
         };
 
         const colorsMajor = { tonic: "#C1E1C1", subdom: "#FDFD96", dom: "#FFB7B2", minor: "#B5EAD7", dim: "#D3D3D3" };
-        const colorsMinor = { tonic: "#4682B4", tonicParallel: "#89CFF0", subdom: "#87CEEB", subdomParallel: "#B0E0E6", dom: "#5A9BD4", dim: "#B0C4DE" };
+        
+        // FIX: New Minor Mode Palette (Mystic Theme)
+        const colorsMinor = { 
+            tonic: "#6495ED", // Burg (CornflowerBlue)
+            tonicParallel: "#90EE90", // Lichtung (LightGreen)
+            subdom: "#48D1CC", // Nebelwald (MediumTurquoise)
+            subdomParallel: "#5F9EA0", // Ruine/Sturm (CadetBlue)
+            dom: "#9370DB", // Drache (MediumPurple)
+            dim: "#B0C4DE" // Sumpf (LightSteelBlue)
+        };
 
         const wheelPositions = [
             { index: 0, 
               major: { roman: "I", desc: "Zuhause. Der Ruhepol.", emoji: "🏠", image: "haus.png", color: colorsMajor.tonic, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
-              minor: { roman: "bIII", desc: "Das Ferienhaus (Dur-Parallele). Hell.", emoji: "🏡", image: "ferienhaus.png", color: colorsMinor.tonicParallel, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              // FIX: Neue bIII Metapher
+              minor: { roman: "bIII", desc: "Die Lichtung. Ein Ort der Hoffnung.", emoji: "🌳", image: "lichtung.png", color: colorsMinor.tonicParallel, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 2, 
               major: { roman: "II", desc: "Die Brücke zur Spannung (V).", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              minor: { roman: "iv", desc: "Kleine Brücke. Zieht zur V.", emoji: "🌉", image: "bruecke.png", color: colorsMinor.subdom, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
+              // FIX: Neue iv Metapher
+              minor: { roman: "iv", desc: "Der Nebelwald. Geheimnisvoll.", emoji: "🌲", image: "nebelwald.png", color: colorsMinor.subdom, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
             { index: 4, 
               major: { roman: "III", desc: "Moll-Dominante. Führt zur VI.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              minor: { roman: "V", desc: "Der Vulkan! Will nach Hause (i).", emoji: "🌋", image: "berg_gross.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              // FIX: Neue V Metapher
+              minor: { roman: "V", desc: "Der Drache! Magisch und gefährlich.", emoji: "🐲", image: "drache.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             { index: 5, 
               major: { roman: "IV", desc: "Kleiner Ausflug. Aufbruch.", emoji: "⛰️", image: "berg_klein.png", color: colorsMajor.subdom, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
-              minor: { roman: "bVI", desc: "Dramatischer Höhepunkt.", emoji: "⛰️", image: "berg_klein.png", color: colorsMinor.subdomParallel, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              // FIX: Neue bVI Metapher
+              minor: { roman: "bVI", desc: "Sturm an der Küste. Dramatisch.", emoji: "⛈️", image: "sturm.png", color: colorsMinor.subdomParallel, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 7, 
               major: { roman: "V", desc: "Der Vulkan. Maximale Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} },
-              minor: { roman: "bVII", desc: "Hintertür zum Ferienhaus.", emoji: "🌳", image: "bank.png", color: colorsMinor.dim, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              // FIX: Neue bVII Metapher
+              minor: { roman: "bVII", desc: "Alte Brücke zurück zur Lichtung.", emoji: "🌉", image: "alte_bruecke.png", color: "#87CEEB", interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 9, 
               major: { roman: "VI", desc: "Moll-Parallele. Etwas traurig.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              minor: { roman: "i", desc: "Moll-Zuhause. Melancholisch.", emoji: "🏠", image: "haus.png", color: colorsMinor.tonic, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
+              // FIX: Neue i Metapher (Tonika)
+              minor: { roman: "i", desc: "Die Burg. Festung und Heimat.", emoji: "🏰", image: "burg.png", color: colorsMinor.tonic, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
             { index: 11, 
               major: { roman: "VII", desc: "Die Klippe. Sehr instabil.", emoji: "⚡", image: "klippe.png", color: colorsMajor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} },
-              minor: { roman: "ii°", desc: "Vorbereiter der Spannung.", emoji: "⚡", image: "klippe.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
+              // FIX: Neue ii° Metapher
+              minor: { roman: "ii°", desc: "Der Sumpf. Bodenlos und trüb.", emoji: "🌫️", image: "sumpf.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
         ];
 
         const probabilityMap = {
             major: {
-                pop: { "I": [["V",3],["IV",3],["VI",2],["II",1]], "II": [["V",3],["IV",2]], "III":[["VI",3],["IV",2]], "IV": [["I",3],["V",3]], "V": [["I",3],["VI",2],["IV",2]], "VI": [["IV",3],["V",2]], "VII":[["I",3]] },
-                jazz: { "I": [["VI",3],["IV",2]], "II": [["V",3]], "III":[["VI",3]], "IV": [["I",3],["VII",1]], "V": [["I",3]], "VI": [["II",3]], "VII":[["III",3],["I",1]] }
+                pop: { "I": [["V",3],["IV",3],["VI",2],["II",1]], "II": [["V",3],["IV",2]], "III":[["VI",3],["IV",2]], "IV": [["I",3],["V",3]], "V": [["I",3],["VI",2],["IV",2]], "VI": [["IV",3],["V",2]], "VII":[["I",3],["III",2],["VI",1]] },
+                jazz: { "I": [["VI",3],["IV",2]], "II": [["V",3]], "III":[["VI",3]], "IV": [["I",3],["VII",1]], "V": [["I",3]], "VI": [["II",3]], "VII":[["III",3],["I",1],["VI",1]] }
             },
             minor: {
                 pop: { "i": [["V",3],["bVI",3]], "iv": [["V",3],["i",2]], "V": [["i",3],["bVI",2]], "bIII":[["bVI",2],["i",3]], "bVI":[["bVII",2],["V",2]], "bVII":[["bIII",3]], "ii°":[["V",3]] },
@@ -314,68 +385,92 @@
 
         const progressions = {
             major: {
-                pop: [ { name: "Pop Klassiker", seq: ["I", "IV", "V", "IV"], ex: "La Bamba / Wild Thing" }, { name: "Axis of Awesome", seq: ["I", "V", "VI", "IV"], ex: "Let It Be" }, { name: "Pop Standard", seq: ["VI", "IV", "I", "V"], ex: "Africa" } ],
+                pop: [ { name: "La Bamba Loop", seq: ["I", "IV", "V", "IV"], ex: "La Bamba / Wild Thing" }, { name: "4-Chord Song", seq: ["I", "V", "VI", "IV"], ex: "Let It Be / Country Roads" }, { name: "Emotional Loop", seq: ["VI", "IV", "I", "V"], ex: "Africa / Pokerface" } ],
                 jazz: [ { name: "The Jazz DNA", seq: ["II", "V", "I"], ex: "Satin Doll" }, { name: "Turnaround", seq: ["I", "VI", "II", "V"], ex: "I Got Rhythm" }, { name: "Moll-Kadenz", seq: ["VII", "III", "VI"], ex: "Autumn Leaves" } ]
             },
             minor: {
-                pop: [ { name: "Andalusian", seq: ["i", "bVII", "bVI", "V"], ex: "Hit the Road Jack" }, { name: "4-Chord Loop", seq: ["i", "bVI", "bIII", "bVII"], ex: "Zombie" }, { name: "Minor Ballad", seq: ["i", "iv", "V", "i"], ex: "House of Rising Sun" } ],
+                pop: [ { name: "Andalusian", seq: ["i", "bVII", "bVI", "V"], ex: "Hit the Road Jack" }, { name: "4-Chord Loop", seq: ["i", "bVI", "bIII", "bVII"], ex: "Zombie / Apologize" }, { name: "Minor Ballad", seq: ["i", "iv", "V", "i"], ex: "House of Rising Sun" } ],
                 jazz: [ { name: "Minor II-V-I", seq: ["ii°", "V", "i"], ex: "Autumn Leaves" }, { name: "Minor Turnaround", seq: ["i", "bVI", "ii°", "V"], ex: "Blue Bossa" }, { name: "Minor Blues", seq: ["i", "iv", "i", "V"], ex: "Mr. P.C." } ]
             }
         };
 
+        // --- EXTENDED SONGBOOK ---
         const songDatabase = [
-            { title: "Let It Be (Beatles)", key: "C", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "No Woman No Cry (Bob Marley)", key: "C", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "I'm Yours (Jason Mraz)", key: "H", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Don't Stop Believin' (Journey)", key: "E", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Can You Feel The Love Tonight", key: "F", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Take Me Home Country Roads", key: "A", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "With or Without You (U2)", key: "D", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "She Will Be Loved (Maroon 5)", key: "C", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Stand By Me (Ben E. King)", key: "A", type: "major", seq: ["I", "VI", "IV", "V"] },
-            { title: "Perfect (Ed Sheeran)", key: "G#", type: "major", seq: ["I", "VI", "IV", "V"] },
-            { title: "Every Breath You Take (Police)", key: "G#", type: "major", seq: ["I", "VI", "IV", "V"] },
-            { title: "Africa (Toto)", key: "H", type: "major", seq: ["VI", "IV", "I", "V"] },
-            { title: "Zombie (Cranberries)", key: "E", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Hello (Adele)", key: "F", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Apologize (OneRepublic)", key: "C", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Love The Way You Lie (Eminem)", key: "G", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Hit the Road Jack", key: "G#", type: "minor", seq: ["i", "bVII", "bVI", "V"] },
-            { title: "Hotel California (Eagles)", key: "H", type: "minor", seq: ["i", "V", "bVII", "IV", "bVI", "bIII", "iv", "V"] },
-            { title: "Autumn Leaves", key: "E", type: "minor", seq: ["ii°", "V", "i", "iv", "bVII", "bIII"] },
-            { title: "Fly Me To The Moon", key: "A", type: "minor", seq: ["i", "iv", "bVII", "bIII", "bVI", "ii°", "V"] },
-            { title: "Billie Jean (Michael Jackson)", key: "F#", type: "minor", seq: ["i", "iv", "i", "iv"] },
-            { title: "All of Me (John Legend)", key: "F", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Radioactive (Imagine Dragons)", key: "H", type: "minor", seq: ["i", "bIII", "V", "bVI"] },
-            { title: "Counting Stars (OneRepublic)", key: "C#", type: "minor", seq: ["i", "bIII", "V", "bVI"] },
-            { title: "Hallelujah (Jeff Buckley)", key: "C", type: "major", seq: ["I", "VI", "I", "VI", "IV", "V"] },
-            { title: "Creep (Radiohead)", key: "G", type: "major", seq: ["I", "III", "IV", "IV"] }, 
-            { title: "Imagine (John Lennon)", key: "C", type: "major", seq: ["I", "IV", "I", "IV"] },
-            { title: "Knockin on Heavens Door", key: "G", type: "major", seq: ["I", "V", "II", "IV"] },
-            { title: "La Bamba", key: "C", type: "major", seq: ["I", "IV", "V"] },
-            { title: "Twist and Shout", key: "D", type: "major", seq: ["I", "IV", "V"] },
-            { title: "Sweet Home Alabama", key: "D", type: "major", seq: ["V", "IV", "I"] },
-            { title: "Wonderwall (Oasis)", key: "F#", type: "minor", seq: ["i", "bIII", "bVII", "IV"] },
-            { title: "Smells Like Teen Spirit", key: "F", type: "minor", seq: ["i", "iv", "bIII", "bVI"] },
-            { title: "Otherside (Red Hot Chili Peppers)", key: "A", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Boulevard of Broken Dreams", key: "F", type: "minor", seq: ["i", "bIII", "bVII", "V"] },
-            { title: "Sweet Child O' Mine", key: "D", type: "major", seq: ["I", "bVII", "IV", "I"] }, 
-            { title: "Blue Bossa", key: "C", type: "minor", seq: ["i", "iv", "ii°", "V"] },
-            { title: "So What (Miles Davis)", key: "D", type: "minor", seq: ["i", "i"] }, 
-            { title: "Take Five", key: "Eb", type: "minor", seq: ["i", "bV"] },
-            { title: "Summertime", key: "A", type: "minor", seq: ["i", "ii°", "V", "i"] },
-            { title: "House of the Rising Sun", key: "A", type: "minor", seq: ["i", "bIII", "IV", "bVI"] },
-            { title: "Mad World", key: "F", type: "minor", seq: ["i", "bIII", "bVII", "IV"] },
-            { title: "Viva La Vida (Coldplay)", key: "Ab", type: "major", seq: ["IV", "V", "I", "VI"] },
-            { title: "Clocks (Coldplay)", key: "Eb", type: "major", seq: ["I", "V", "II", "IV"] }, 
-            { title: "Hey Jude", key: "F", type: "major", seq: ["I", "V", "V", "I"] },
-            { title: "Yesterday", key: "F", type: "major", seq: ["I", "VII", "VI", "IV", "V", "I"] },
-            { title: "Despacito", key: "H", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
-            { title: "Purple Rain", key: "A#", type: "major", seq: ["I", "VI", "V", "IV"] },
-            { title: "Halo (Beyonce)", key: "A", type: "major", seq: ["I", "VI", "IV", "V"] },
-            { title: "Someone Like You", key: "A", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Rolling in the Deep", key: "C", type: "minor", seq: ["i", "bVII", "bVI", "bVII", "bVI"] },
-            { title: "Memories (Maroon 5)", key: "H", type: "major", seq: ["I", "V", "VI", "III", "IV", "I", "IV", "V"] }
+            // Pop Major
+            { title: "Let It Be", interpret: "The Beatles", key: "C", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "No Woman No Cry", interpret: "Bob Marley", key: "C", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "I'm Yours", interpret: "Jason Mraz", key: "H", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Don't Stop Believin'", interpret: "Journey", key: "E", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Can You Feel The Love Tonight", interpret: "Elton John", key: "F", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Take Me Home Country Roads", interpret: "John Denver", key: "A", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "With or Without You", interpret: "U2", key: "D", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "She Will Be Loved", interpret: "Maroon 5", key: "C", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "High Hopes", interpret: "Panic! At The Disco", key: "F", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Beautiful Things", interpret: "Benson Boone", key: "C", type: "major", seq: ["VI", "I", "V", "IV"] },
+            { title: "I Ain't Worried", interpret: "OneRepublic", key: "C", type: "major", seq: ["IV", "V", "VI", "V"] },
+            { title: "Someone", interpret: "ClockClock", key: "D", type: "major", seq: ["VI", "IV", "I", "V"] },
+            { title: "Stand By Me", interpret: "Ben E. King", key: "A", type: "major", seq: ["I", "VI", "IV", "V"] },
+            { title: "Perfect", interpret: "Ed Sheeran", key: "G#", type: "major", seq: ["I", "VI", "IV", "V"] },
+            { title: "Every Breath You Take", interpret: "The Police", key: "G#", type: "major", seq: ["I", "VI", "IV", "V"] },
+            { title: "Africa", interpret: "Toto", key: "H", type: "major", seq: ["VI", "IV", "I", "V"] },
+            { title: "Hallelujah", interpret: "Leonard Cohen", key: "C", type: "major", seq: ["I", "VI", "I", "VI", "IV", "V"] },
+            { title: "Imagine", interpret: "John Lennon", key: "C", type: "major", seq: ["I", "IV", "I", "IV"] },
+            { title: "Knockin on Heavens Door", interpret: "Bob Dylan", key: "G", type: "major", seq: ["I", "V", "II", "IV"] },
+            { title: "La Bamba", interpret: "Ritchie Valens", key: "C", type: "major", seq: ["I", "IV", "V"] },
+            { title: "Twist and Shout", interpret: "The Beatles", key: "D", type: "major", seq: ["I", "IV", "V"] },
+            { title: "Sweet Home Alabama", interpret: "Lynyrd Skynyrd", key: "D", type: "major", seq: ["V", "IV", "I"] },
+            { title: "Sweet Child O' Mine", interpret: "Guns N' Roses", key: "D", type: "major", seq: ["I", "bVII", "IV", "I"] },
+            { title: "Viva La Vida", interpret: "Coldplay", key: "Ab", type: "major", seq: ["IV", "V", "I", "VI"] },
+            { title: "Clocks", interpret: "Coldplay", key: "Eb", type: "major", seq: ["I", "V", "II", "IV"] },
+            { title: "Hey Jude", interpret: "The Beatles", key: "F", type: "major", seq: ["I", "V", "V", "I"] },
+            { title: "Yesterday", interpret: "The Beatles", key: "F", type: "major", seq: ["I", "VII", "VI", "IV", "V", "I"] },
+            { title: "Purple Rain", interpret: "Prince", key: "A#", type: "major", seq: ["I", "VI", "V", "IV"] },
+            { title: "Halo", interpret: "Beyoncé", key: "A", type: "major", seq: ["I", "VI", "IV", "V"] },
+            { title: "An Tagen wie diesen", interpret: "Die Toten Hosen", key: "D", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Wannsee", interpret: "Die Toten Hosen", key: "Eb", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Zusammen", interpret: "Fanta4", key: "C", type: "major", seq: ["VI", "IV", "I", "V"] },
+            { title: "Alles nur geklaut", interpret: "Die Prinzen", key: "C", type: "major", seq: ["I", "VI", "II", "V"] },
+            { title: "Something", interpret: "The Beatles", key: "C", type: "major", seq: ["I", "I", "VII", "I"] }, 
+            { title: "Fly Away", interpret: "Lenny Kravitz", key: "A", type: "major", seq: ["I", "bVII", "bVI", "bVII"] },
+            { title: "I Don't Wanna Wait", interpret: "David Guetta", key: "C", type: "major", seq: ["VI", "IV", "I", "V"] },
+            
+            // Pop Minor / Rock
+            { title: "Zombie", interpret: "The Cranberries", key: "E", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Hello", interpret: "Adele", key: "F", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Apologize", interpret: "Timbaland/OneRepublic", key: "C", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Love The Way You Lie", interpret: "Eminem/Rihanna", key: "G", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Hit the Road Jack", interpret: "Ray Charles", key: "G#", type: "minor", seq: ["i", "bVII", "bVI", "V"] },
+            { title: "Hotel California", interpret: "Eagles", key: "H", type: "minor", seq: ["i", "V", "bVII", "IV", "bVI", "bIII", "iv", "V"] },
+            { title: "Billie Jean", interpret: "Michael Jackson", key: "F#", type: "minor", seq: ["i", "iv", "i", "iv"] },
+            { title: "All of Me", interpret: "John Legend", key: "F", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Radioactive", interpret: "Imagine Dragons", key: "H", type: "minor", seq: ["i", "bIII", "V", "bVI"] },
+            { title: "Counting Stars", interpret: "OneRepublic", key: "C#", type: "minor", seq: ["i", "bIII", "V", "bVI"] },
+            { title: "Wonderwall", interpret: "Oasis", key: "F#", type: "minor", seq: ["i", "bIII", "bVII", "IV"] },
+            { title: "Smells Like Teen Spirit", interpret: "Nirvana", key: "F", type: "minor", seq: ["i", "iv", "bIII", "bVI"] },
+            { title: "Otherside", interpret: "Red Hot Chili Peppers", key: "A", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Boulevard of Broken Dreams", interpret: "Green Day", key: "F", type: "minor", seq: ["i", "bIII", "bVII", "V"] },
+            { title: "Despacito", interpret: "Luis Fonsi", key: "H", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
+            { title: "Rolling in the Deep", interpret: "Adele", key: "C", type: "minor", seq: ["i", "bVII", "bVI", "bVII", "bVI"] },
+            { title: "Bones", interpret: "Imagine Dragons", key: "F", type: "minor", seq: ["i", "bVI", "III", "i"] }, 
+            { title: "Thunderstruck", interpret: "AC/DC", key: "H", type: "major", seq: ["I", "bVII", "IV", "I"] }, 
+            { title: "Back in Black", interpret: "AC/DC", key: "E", type: "major", seq: ["I", "bVII", "IV"] },
+            { title: "While My Guitar Gently Weeps", interpret: "The Beatles", key: "A", type: "minor", seq: ["i", "i", "iv", "bVII", "bIII", "V"] },
+            { title: "Hey Joe", interpret: "Jimi Hendrix", key: "E", type: "major", seq: ["bVI", "bIII", "bVII", "IV", "I"] },
+            { title: "Seven Nation Army", interpret: "The White Stripes", key: "E", type: "minor", seq: ["i", "bIII", "i", "bVII", "bVI", "V"] },
+            { title: "Mad World", interpret: "Tears for Fears", key: "F", type: "minor", seq: ["i", "bIII", "bVII", "IV"] },
+            { title: "Lady in Black", interpret: "Uriah Heep", key: "E", type: "minor", seq: ["i", "bVII", "i"] },
+            { title: "I Will Survive", interpret: "Gloria Gaynor", key: "A", type: "minor", seq: ["i", "iv", "bVII", "bIII", "bVI", "ii°", "V"] },
+            { title: "The Weekend Whip", interpret: "The Fold (Ninjago)", key: "D", type: "major", seq: ["I", "V", "VI", "IV"] },
+            { title: "Get Lucky", interpret: "Daft Punk", key: "F#", type: "minor", seq: ["i", "bIII", "iv", "V"] },
+            { title: "It Ain't Over 'til It's Over", interpret: "Lenny Kravitz", key: "Db", type: "major", seq: ["I", "VI", "I", "VI"] },
+            
+            // Jazz Standards
+            { title: "Autumn Leaves", interpret: "Jazz Standard", key: "E", type: "minor", seq: ["ii°", "V", "i", "iv", "bVII", "bIII"] },
+            { title: "Fly Me To The Moon", interpret: "Frank Sinatra", key: "A", type: "minor", seq: ["i", "iv", "bVII", "bIII", "bVI", "ii°", "V"] },
+            { title: "Blue Bossa", interpret: "Kenny Dorham", key: "C", type: "minor", seq: ["i", "iv", "ii°", "V"] },
+            { title: "So What", interpret: "Miles Davis", key: "D", type: "minor", seq: ["i", "i"] },
+            { title: "Take Five", interpret: "Dave Brubeck", key: "Eb", type: "minor", seq: ["i", "bV"] },
+            { title: "Summertime", interpret: "Gershwin", key: "A", type: "minor", seq: ["i", "ii°", "V", "i"] }
         ];
 
         const outerWheel = document.getElementById('outerWheel');
@@ -397,6 +492,7 @@
         const startBtn = document.getElementById('startBtn');
         const songSearch = document.getElementById('songSearch');
         const clearBtn = document.getElementById('clearBtn');
+        const replayArea = document.getElementById('replayArea');
         
         const counterRotatingElements = [];
         const segmentGroups = []; 
@@ -406,6 +502,10 @@
         let lastPlayedNotes = [];
         let currentChordLabelForVisualizer = "";
         let currentRootNoteName = "";
+        let currentPlayingSong = null;
+
+        // --- SORT DATABASE ON INIT ---
+        songDatabase.sort((a,b) => a.title.localeCompare(b.title));
 
         startBtn.addEventListener('click', async () => {
             initAudio();
@@ -482,6 +582,7 @@
             });
         }
 
+        // --- DRAWING ---
         function getMidiPitch(noteObj) {
             const idx = noteIndexMap[noteObj.note.replace('#','')];
             const isSharp = noteObj.note.includes("#");
@@ -623,6 +724,8 @@
                         const actualNoteIdx = (baseNoteIdx + fret) % 12;
                         if (notes[actualNoteIdx] === currentRootNoteName) {
                             dot.classList.add('root');
+                            // FIX: Reverted to static high-contrast red for Root
+                            dot.style.backgroundColor = '#ff6b6b';
                         }
                         dot.style.top = ((relativeFret * 14) - 7) + "px"; 
                         stringDiv.appendChild(dot);
@@ -634,7 +737,6 @@
             instrumentContainer.appendChild(chart);
         }
 
-        // PIANO
         function drawPiano(vizNotes, chordLabelFull) {
             instrumentContainer.innerHTML = '';
             const container = document.createElement('div'); container.className = 'piano-container';
@@ -662,7 +764,12 @@
                     const isActive = vizNotes.some(n => n.note === noteName && n.octave === currentOctave);
                     if (isActive) {
                         key.classList.add('active');
-                        if (noteName === currentRootNoteName) key.classList.add('root');
+                        if (noteName === currentRootNoteName) {
+                            key.classList.add('root');
+                            // FIX: Reverted to static high-contrast red for Root
+                            key.style.backgroundColor = '#ff6b6b';
+                            key.style.borderColor = "#b71c1c";
+                        }
                     }
                     pianoDiv.appendChild(key);
                 });
@@ -783,37 +890,73 @@
             updateInstrumentDisplay();
         }
 
-        // --- FILTER FUNCTION ---
+        // --- FILTER FUNCTION FIXED ---
         function clearSearch() {
             songSearch.value = "";
-            filterSongs();
             clearBtn.style.display = 'none';
+            document.getElementById('replayArea').innerHTML = ""; 
+            currentPlayingSong = null;
+            renderProgressions(); 
+        }
+
+        function showAllSongs() {
+            if(songSearch.value === "") filterSongs();
         }
 
         function filterSongs() {
             const query = songSearch.value.toLowerCase();
             const list = document.getElementById('progList');
             const clearBtn = document.getElementById('clearBtn');
+            const replayArea = document.getElementById('replayArea');
             list.innerHTML = "";
 
             if (query.length > 0) {
                 clearBtn.style.display = 'block';
             } else {
                 clearBtn.style.display = 'none';
-                renderProgressions(); // RESET TO DEFAULT
-                return;
+                if(document.activeElement === songSearch) {
+                    // Keep showing list if focused
+                } else {
+                    renderProgressions(); 
+                    return;
+                }
             }
 
-            const results = songDatabase.filter(s => s.title.toLowerCase().includes(query) || s.key.toLowerCase().includes(query));
+            const results = query === "" ? songDatabase : songDatabase.filter(s => 
+                s.title.toLowerCase().includes(query) || 
+                (s.interpret && s.interpret.toLowerCase().includes(query)) ||
+                s.key.toLowerCase().includes(query)
+            );
             
             if(results.length === 0) {
                 list.innerHTML = `<div style="padding:10px; text-align:center; color:#888;">Keine Songs gefunden.</div>`;
                 return;
             }
 
+            replayArea.innerHTML = "";
+
             results.forEach(song => {
                 const btn = document.createElement('div'); btn.className = 'prog-btn';
-                btn.innerHTML = `<div class="prog-info"><span class="prog-title">${song.title}</span><span class="prog-steps">Key: ${song.key} : ${song.seq.join(' - ')}</span></div><div>▶️</div>`;
+                
+                let typeName = "";
+                // Search in defaults for Kadenztyp Name
+                for(let k in progressions) {
+                    for(let s in progressions[k]) {
+                        let p = progressions[k][s].find(x => JSON.stringify(x.seq) === JSON.stringify(song.seq));
+                        if(p) typeName = p.name;
+                    }
+                }
+                if(!typeName) typeName = "Custom";
+
+                const interpretDisplay = song.interpret ? song.interpret : "Unbekannt";
+                
+                btn.innerHTML = `
+                    <div class="prog-info">
+                        <span class="prog-title">${song.title} <span style="font-weight:normal; font-size:0.85rem; color:#555;">(${interpretDisplay}, ${typeName})</span></span>
+                        <span class="prog-steps">Key: ${song.key} : ${song.seq.join(' - ')}</span>
+                    </div>
+                    <div>▶️</div>
+                `;
                 btn.onclick = () => loadAndPlaySong(song, btn);
                 list.appendChild(btn);
             });
@@ -830,18 +973,27 @@
             }
             currentStep = -wheelTargetIndex;
             
-            // Set Value, Clear List, Keep X visible
             songSearch.value = song.title;
-            document.getElementById('progList').innerHTML = "";
+            document.getElementById('progList').innerHTML = ""; 
             document.getElementById('clearBtn').style.display = 'block';
+
+            const replayArea = document.getElementById('replayArea');
+            const interpretDisplay = song.interpret ? song.interpret : "";
+            replayArea.innerHTML = `
+                <div class="replay-card" onclick="loadAndPlaySong(currentPlayingSong, this)">
+                    <div class="replay-title">🎵 ${song.title}</div>
+                    <div class="replay-hint">${interpretDisplay} • Tippen zum erneuten Abspielen</div>
+                </div>
+            `;
+            currentPlayingSong = song;
 
             updateUI(); 
             setWheelRotation(currentStep * 30); 
             
-            await playProgression(song, btn);
+            await playProgression(song, btn || document.querySelector('.replay-card'));
         }
 
-        // ... REST SAME ...
+        // ... REST ...
         function playKeyCenter() {
             if(isSequencerPlaying) return;
             const isMinor = tonalityToggle.checked;
@@ -903,7 +1055,8 @@
             });
         }
         async function playProgression(progObj, btnElement) {
-            if (isSequencerPlaying) return; isSequencerPlaying = true; btnElement.classList.add('playing'); 
+            if (isSequencerPlaying) return; isSequencerPlaying = true; 
+            if(btnElement) btnElement.classList.add('playing'); 
             const isMinor = tonalityToggle.checked;
             for (let roman of progObj.seq) {
                 const ref = segmentGroups.find(r => (isMinor ? r.data.minor : r.data.major).roman === roman);
@@ -912,12 +1065,14 @@
                     ref.group.classList.add('active'); await wait(1200); ref.group.classList.remove('active');
                 }
             }
-            isSequencerPlaying = false; btnElement.classList.remove('playing');
+            isSequencerPlaying = false; 
+            if(btnElement) btnElement.classList.remove('playing');
         }
         function renderProgressions() {
             const isJazz = jazzToggle.checked; const isMinor = tonalityToggle.checked;
             const list = progressions[isMinor?'minor':'major'][isJazz?'jazz':'pop'];
-            if(songSearch.value.length >= 1) return; 
+            // If user typed something, don't overwrite unless empty
+            if(songSearch.value.length >= 1) return;
             
             progList.innerHTML = ''; 
             list.forEach(prog => {
@@ -937,7 +1092,11 @@
                 ref.iconImg.src = modeData.image; ref.iconImg.alt = modeData.roman;
             });
             updateKeyCenter(); 
-            if(songSearch.value.length < 1) renderProgressions(); 
+            // Fix: Show defaults if search empty
+            if(songSearch.value.length < 1) { 
+                document.getElementById('replayArea').innerHTML = ""; // Clear Replay
+                renderProgressions(); 
+            }
             redrawLines();
         }
         function updateKeyCenter() {
