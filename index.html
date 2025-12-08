@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Harmonie-Rad V44 (Mystic Edition)</title>
+    <title>Harmony Wheel - V46 (Mystic Edition)</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -24,13 +24,12 @@
         /* --- START OVERLAY (LEGEND) - DARK MODE --- */
         #startOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            /* FIX: Dark Background for visibility */
             background: #1a2a3a; color: #fff; z-index: 9999; 
             display: flex; flex-direction: column; align-items: center; 
             padding: 20px; overflow-y: auto;
         }
-        #startOverlay h1 { color: #fff; } /* Headline White */
-        #startOverlay p { color: #ccc !important; } /* Subtext Light Grey */
+        #startOverlay h1 { color: #fff; } 
+        #startOverlay p { color: #ccc !important; }
 
         .legend-grid {
             display: grid; grid-template-columns: 60px 1fr; gap: 10px; text-align: left; margin: 20px 0; max-width: 500px;
@@ -41,7 +40,7 @@
         .legend-text { font-size: 1.1rem; color: #eee; line-height: 1.3; display: flex; align-items: center; }
         
         #startBtn {
-            padding: 15px 50px; font-size: 1.5rem; background: #ffeb3b; color: #333; /* Yellow Button for Contrast */
+            padding: 15px 50px; font-size: 1.5rem; background: #ffeb3b; color: #333; 
             border: none; border-radius: 50px; cursor: pointer; margin-top: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: 'Patrick Hand', cursive; font-weight: bold;
         }
@@ -75,7 +74,10 @@
         input:checked + .slider-switch { background-color: #333; }
         input:checked + .slider-switch:before { transform: translateX(14px); }
         #tonalityToggle:checked + .slider-switch { background-color: #1a2a3a; }
+        
+        .threshold-group { display: flex; align-items: center; transition: opacity 0.3s; }
         input[type=range] { width: 50px; accent-color: #333; cursor: pointer; }
+        input[type=range]:disabled { cursor: not-allowed; opacity: 0.5; }
 
         /* --- WHEEL CONTAINER --- */
         .wheel-container { 
@@ -151,7 +153,6 @@
         .chart-fret-line { position: absolute; left: 0; right: 0; height: 1px; background: #222; z-index:0; }
         .chart-dot { position: absolute; width: 11px; height: 11px; background: #111; border-radius: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; }
         
-        /* FIX: Static high-contrast color for Root */
         .chart-dot.root { background: #ff6b6b; box-shadow: 0 0 3px rgba(0,0,0,0.4); } 
         .chart-marker { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); font-size: 11px; color: #222; font-weight: bold; }
         .fret-offset-label { position: absolute; top: 0; left: -22px; font-size: 0.9rem; font-weight: bold; }
@@ -162,8 +163,6 @@
         .key.white { width: 16px; background: #fff; height: 100%; z-index: 1; }
         .key.black { width: 10px; background: #333; height: 60%; margin-left: -5px; margin-right: -5px; z-index: 2; }
         .key.active { background: #fbc02d !important; border-bottom: 3px solid #f57f17; } 
-        
-        /* FIX: Static high-contrast color for Root on Piano */
         .key.root { background: #ff6b6b !important; border-bottom: 3px solid #d32f2f; } 
 
         /* PROGRESSION CONTAINER */
@@ -198,13 +197,17 @@
         .replay-hint { font-size: 0.8rem; color: #666; }
 
         .prog-btn {
-            background: white; border: 1px solid #ccc; border-radius: 8px; padding: 5px 12px; text-align: left; cursor: pointer; transition: background 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; min-height: 50px;
+            background: white; border: 1px solid #ccc; border-radius: 8px; padding: 8px 12px; 
+            text-align: left; cursor: pointer; transition: background 0.2s; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); display: flex; justify-content: space-between; 
+            align-items: center; min-height: 60px; /* Increased height */
         }
         .prog-btn:hover { background: #f9f9f9; border-color: #999; }
         .prog-btn.playing { border-color: #333; background: #eee; cursor: wait;}
-        .prog-info { display: flex; flex-direction: column; }
+        .prog-info { display: flex; flex-direction: column; justify-content: center; }
         .prog-title { font-weight: bold; font-size: 0.95rem; color: #333; }
-        .prog-steps { font-size: 0.8rem; color: #666; font-family: sans-serif; }
+        .prog-steps { font-size: 0.8rem; color: #444; font-family: sans-serif; }
+        .prog-ex { font-size: 0.75rem; color: #888; font-style: italic; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -233,7 +236,7 @@
         <p style="font-size:0.8rem; color:#888; margin-top:20px;">(Stummschalter deaktivieren)</p>
     </div>
 
-    <h1>Harmonie-Rad</h1>
+    <h1>Harmony Wheel</h1>
 
     <div class="info-bar" id="infoBar">
         <div class="info-title">Willkommen!</div>
@@ -256,9 +259,9 @@
         </div>
         <div class="divider"></div>
         <div class="toggle-group">
-            <span>☊</span><label class="switch"><input type="checkbox" id="pathToggle" checked onclick="redrawLines()"><span class="slider-switch"></span></label>
+            <span>☊</span><label class="switch"><input type="checkbox" id="pathToggle" checked onclick="togglePathLines()"><span class="slider-switch"></span></label>
         </div>
-        <div class="threshold-group">
+        <div class="threshold-group" id="sliderContainer">
             <input type="range" id="complexitySlider" min="1" max="3" value="2" step="1" oninput="redrawLines()">
         </div>
     </div>
@@ -326,7 +329,6 @@
 
         const colorsMajor = { tonic: "#C1E1C1", subdom: "#FDFD96", dom: "#FFB7B2", minor: "#B5EAD7", dim: "#D3D3D3" };
         
-        // FIX: New Minor Mode Palette (Mystic Theme)
         const colorsMinor = { 
             tonic: "#6495ED", // Burg (CornflowerBlue)
             tonicParallel: "#90EE90", // Lichtung (LightGreen)
@@ -336,39 +338,33 @@
             dim: "#B0C4DE" // Sumpf (LightSteelBlue)
         };
 
+        // FIX: Swapped Nebelwald (now bIII) and Lichtung (now iv) based on request
         const wheelPositions = [
             { index: 0, 
               major: { roman: "I", desc: "Zuhause. Der Ruhepol.", emoji: "🏠", image: "haus.png", color: colorsMajor.tonic, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
-              // FIX: Neue bIII Metapher
-              minor: { roman: "bIII", desc: "Die Lichtung. Ein Ort der Hoffnung.", emoji: "🌳", image: "lichtung.png", color: colorsMinor.tonicParallel, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              minor: { roman: "bIII", desc: "Der Nebelwald. Geheimnisvoll.", emoji: "🌲", image: "nebelwald.png", color: colorsMinor.subdom, interval: 0, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 2, 
-              major: { roman: "II", desc: "Die Brücke zur Spannung (V).", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              // FIX: Neue iv Metapher
-              minor: { roman: "iv", desc: "Der Nebelwald. Geheimnisvoll.", emoji: "🌲", image: "nebelwald.png", color: colorsMinor.subdom, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
+              major: { roman: "II", desc: "Die Brücke zur Spannung (IV oder V).", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
+              minor: { roman: "iv", desc: "Die Lichtung. Ein Ort der Hoffnung.", emoji: "🌳", image: "lichtung.png", color: colorsMinor.tonicParallel, interval: 2, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
             { index: 4, 
-              major: { roman: "III", desc: "Moll-Dominante. Führt zur VI.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              // FIX: Neue V Metapher
+              major: { roman: "III", desc: "Moll-Dominante - Rast vor der eigenen Haustür. Führt zur VI.", emoji: "🌳", image: "bank.png", color: colorsMajor.minor, interval: 4, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
               minor: { roman: "V", desc: "Der Drache! Magisch und gefährlich.", emoji: "🐲", image: "drache.png", color: colorsMinor.dom, interval: 4, jazz: {label: "7(b9)", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             { index: 5, 
               major: { roman: "IV", desc: "Kleiner Ausflug. Aufbruch.", emoji: "⛰️", image: "berg_klein.png", color: colorsMajor.subdom, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} },
-              // FIX: Neue bVI Metapher
               minor: { roman: "bVI", desc: "Sturm an der Küste. Dramatisch.", emoji: "⛈️", image: "sturm.png", color: colorsMinor.subdomParallel, interval: 5, jazz: {label: "maj7", ivs:[0,4,7,11]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 7, 
-              major: { roman: "V", desc: "Der Vulkan. Maximale Spannung.", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} },
-              // FIX: Neue bVII Metapher
-              minor: { roman: "bVII", desc: "Alte Brücke zurück zur Lichtung.", emoji: "🌉", image: "alte_bruecke.png", color: "#87CEEB", interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
+              major: { roman: "V", desc: "Großer Berg - maximale Spannung!", emoji: "🌋", image: "berg_gross.png", color: colorsMajor.dom, interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} },
+              minor: { roman: "bVII", desc: "Alte Brücke - eine Verbindung zu ewas anderem.", emoji: "🌉", image: "alte_bruecke.png", color: "#87CEEB", interval: 7, jazz: {label: "7", ivs:[0,4,7,10]}, pop: {label: "Dur", ivs:[0,4,7]} } },
             null,
             { index: 9, 
               major: { roman: "VI", desc: "Moll-Parallele. Etwas traurig.", emoji: "🌉", image: "bruecke.png", color: colorsMajor.minor, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} },
-              // FIX: Neue i Metapher (Tonika)
               minor: { roman: "i", desc: "Die Burg. Festung und Heimat.", emoji: "🏰", image: "burg.png", color: colorsMinor.tonic, interval: 9, jazz: {label: "m7", ivs:[0,3,7,10]}, pop: {label: "Moll", ivs:[0,3,7]} } },
             null,
             { index: 11, 
               major: { roman: "VII", desc: "Die Klippe. Sehr instabil.", emoji: "⚡", image: "klippe.png", color: colorsMajor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} },
-              // FIX: Neue ii° Metapher
               minor: { roman: "ii°", desc: "Der Sumpf. Bodenlos und trüb.", emoji: "🌫️", image: "sumpf.png", color: colorsMinor.dim, interval: 11, jazz: {label: "m7b5", ivs:[0,3,6,10]}, pop: {label: "Verm.", ivs:[0,3,6]} } } 
         ];
 
@@ -383,13 +379,14 @@
             }
         };
 
+        // FIX: Renamed 4-Chord Song to "Axis of Awesome"
         const progressions = {
             major: {
-                pop: [ { name: "La Bamba Loop", seq: ["I", "IV", "V", "IV"], ex: "La Bamba / Wild Thing" }, { name: "4-Chord Song", seq: ["I", "V", "VI", "IV"], ex: "Let It Be / Country Roads" }, { name: "Emotional Loop", seq: ["VI", "IV", "I", "V"], ex: "Africa / Pokerface" } ],
+                pop: [ { name: "La Bamba Loop", seq: ["I", "IV", "V", "IV"], ex: "La Bamba / Wild Thing" }, { name: "Axis of Awesome", seq: ["I", "V", "VI", "IV"], ex: "Let It Be / Country Roads" }, { name: "The Africa Loop", seq: ["VI", "IV", "I", "V"], ex: "Africa / Pokerface" } ],
                 jazz: [ { name: "The Jazz DNA", seq: ["II", "V", "I"], ex: "Satin Doll" }, { name: "Turnaround", seq: ["I", "VI", "II", "V"], ex: "I Got Rhythm" }, { name: "Moll-Kadenz", seq: ["VII", "III", "VI"], ex: "Autumn Leaves" } ]
             },
             minor: {
-                pop: [ { name: "Andalusian", seq: ["i", "bVII", "bVI", "V"], ex: "Hit the Road Jack" }, { name: "4-Chord Loop", seq: ["i", "bVI", "bIII", "bVII"], ex: "Zombie / Apologize" }, { name: "Minor Ballad", seq: ["i", "iv", "V", "i"], ex: "House of Rising Sun" } ],
+                pop: [ { name: "Andalusian", seq: ["i", "bVII", "bVI", "V"], ex: "Hit the Road Jack" }, { name: "The Zombie Loop", seq: ["i", "bVI", "bIII", "bVII"], ex: "Zombie / Apologize" }, { name: "Minor Ballad", seq: ["i", "iv", "V", "i"], ex: "House of Rising Sun" } ],
                 jazz: [ { name: "Minor II-V-I", seq: ["ii°", "V", "i"], ex: "Autumn Leaves" }, { name: "Minor Turnaround", seq: ["i", "bVI", "ii°", "V"], ex: "Blue Bossa" }, { name: "Minor Blues", seq: ["i", "iv", "i", "V"], ex: "Mr. P.C." } ]
             }
         };
@@ -724,7 +721,6 @@
                         const actualNoteIdx = (baseNoteIdx + fret) % 12;
                         if (notes[actualNoteIdx] === currentRootNoteName) {
                             dot.classList.add('root');
-                            // FIX: Reverted to static high-contrast red for Root
                             dot.style.backgroundColor = '#ff6b6b';
                         }
                         dot.style.top = ((relativeFret * 14) - 7) + "px"; 
@@ -766,7 +762,6 @@
                         key.classList.add('active');
                         if (noteName === currentRootNoteName) {
                             key.classList.add('root');
-                            // FIX: Reverted to static high-contrast red for Root
                             key.style.backgroundColor = '#ff6b6b';
                             key.style.borderColor = "#b71c1c";
                         }
@@ -1068,19 +1063,39 @@
             isSequencerPlaying = false; 
             if(btnElement) btnElement.classList.remove('playing');
         }
+        
+        // FIX: Added Example Songs Display & Styles
         function renderProgressions() {
             const isJazz = jazzToggle.checked; const isMinor = tonalityToggle.checked;
             const list = progressions[isMinor?'minor':'major'][isJazz?'jazz':'pop'];
-            // If user typed something, don't overwrite unless empty
             if(songSearch.value.length >= 1) return;
             
             progList.innerHTML = ''; 
             list.forEach(prog => {
                 const btn = document.createElement('div'); btn.className = 'prog-btn';
-                btn.innerHTML = `<div class="prog-info"><span class="prog-title">${prog.name}</span><span class="prog-steps">${prog.seq.join(' – ')}</span></div><div>▶️</div>`;
+                // Added third line for Example songs
+                btn.innerHTML = `
+                    <div class="prog-info">
+                        <span class="prog-title">${prog.name}</span>
+                        <span class="prog-steps">${prog.seq.join(' – ')}</span>
+                        <span class="prog-ex">Bsp: ${prog.ex}</span>
+                    </div>
+                    <div>▶️</div>`;
                 btn.onclick = () => playProgression(prog, btn); progList.appendChild(btn);
             });
         }
+
+        // FIX: Toggle Logic for Slider
+        function togglePathLines() {
+            redrawLines();
+            const slider = document.getElementById('complexitySlider');
+            const container = document.getElementById('sliderContainer');
+            const isEnabled = pathToggle.checked;
+            
+            slider.disabled = !isEnabled;
+            container.style.opacity = isEnabled ? '1' : '0.4';
+        }
+
         function updateUI() {
             const isMinor = tonalityToggle.checked; const isJazz = jazzToggle.checked;
             if(isMinor) innerWheel.classList.add('minor-mode'); else innerWheel.classList.remove('minor-mode');
@@ -1097,7 +1112,7 @@
                 document.getElementById('replayArea').innerHTML = ""; // Clear Replay
                 renderProgressions(); 
             }
-            redrawLines();
+            togglePathLines(); // Ensure correct initial state
         }
         function updateKeyCenter() {
             let indexAtTop = safeMod(0 - currentStep, 12);
