@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Harmony Wheel - V46 (Mystic Edition)</title>
+    <title>Harmony Wheel</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -670,7 +670,9 @@ const probabilityMap = {
         // --- SORT DATABASE ON INIT ---
         songDatabase.sort((a,b) => a.title.localeCompare(b.title));
 
+/* --- Startanimation des Rades--- */
         startBtn.addEventListener('click', async () => {
+            // 1. Audio-Engine starten (Dein bestehender Code)
             initAudio();
             if (audioCtx) {
                 try {
@@ -682,11 +684,38 @@ const probabilityMap = {
                     source.start(0);
                 } catch (e) { console.error(e); }
             }
+            
+            // 2. Overlay ausblenden
             startOverlay.style.opacity = '0';
             setTimeout(() => { startOverlay.style.display = 'none'; }, 500);
+            
+            // 3. Rad initialisieren
             initWheel();
+
+            // --- NEU: DIE ANIMATION ---
+            
+            // A) Startposition setzen: Wir drehen es künstlich 60 Grad zurück
+            outerWheel.style.transition = 'none';
+            setWheelRotation(-60);
+            
+            // B) Browser zwingen, die Änderung zu rendern (Reflow)
+            void outerWheel.offsetWidth;
+
+            // C) Sanfte "Bounce"-Animation aktivieren
+            outerWheel.style.transition = 'transform 1.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+            
+            // D) Auf 0 Grad (C-Dur) drehen
             setWheelRotation(0);
+            
+            // Variablen und UI synchronisieren
+            currentStep = 0;
+            currentVisualAngle = 0;
             updateUI();
+
+            // E) Optional: Einrast-Geräusch abspielen (zeitlich passend zur Animation)
+            setTimeout(() => {
+                if(typeof playClickSound === 'function') playClickSound();
+            }, 800); 
         });
 
         function initWheel() {
