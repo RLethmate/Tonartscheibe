@@ -75,6 +75,37 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); font-family: 'Patrick Hand', cursive; font-weight: bold;
         }
 
+/* --- INFO BUTTON --- */
+        #infoBtn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 30px;
+            height: 30px;
+            background: #fff;
+            border: 2px solid #ccc;
+            border-radius: 50%;
+            color: #555;
+            font-family: sans-serif; /* Ein einfaches "i" sieht in Sans-Serif oft besser aus als in Handschrift */
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 5000; /* Hoch genug, aber unter dem Overlay (9999) */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        #infoBtn:hover {
+            background: #eee;
+            border-color: #999;
+            transform: scale(1.1);
+        }
+
+
+
+
         /* --- INFO BAR --- */
         .info-bar {
             min-height: 50px; margin-bottom: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -270,11 +301,10 @@
             <div class="legend-title">Großer Berg <br>(Dominante):</div>
             <div class="legend-desc">Maximale Spannung mit viel Heimweh! Von hier aus will man meist wieder nach Hause.</div>
         </div>
-
         <button id="startBtn">Starten ▶</button>
         <p style="font-size:0.8rem; color:#888; margin-top:20px;">(Stummschalter deaktivieren)</p>
     </div>
-
+    <div id="infoBtn" onclick="showStartScreen()">i</div>
 
     <h1>Harmony Wheel</h1>
 
@@ -1537,6 +1567,12 @@ let isDragging = false;
             let indexAtTop = safeMod(0 - currentStep, 12);
             const isMinor = tonalityToggle.checked;
             keyDisplay.innerText = notes[isMinor ? safeMod(indexAtTop + 9, 12) : indexAtTop] + (isMinor ? "m" : "");
+        }
+        function showStartScreen() {
+            const overlay = document.getElementById('startOverlay');
+            overlay.style.display = 'flex';
+            // Kleiner Timeout für den Fade-In Effekt
+            setTimeout(() => { overlay.style.opacity = '1'; }, 10);
         }
     </script>
 </body>
