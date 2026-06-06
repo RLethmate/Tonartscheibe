@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Harmony Wheel - V48 (Ärzte & Fixes)</title>
+    <title>Harmony Wheel - V47 (Complete Edition)</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -50,6 +50,7 @@
             font-weight: bold; 
             color: #fff; 
             line-height: 1.2;
+            /* white-space: nowrap; ENTFERNT für Smartphone-Umbruch */
         }
         
         .legend-desc { 
@@ -152,16 +153,15 @@
         .center-label { font-size: 0.7rem; color: #666; pointer-events: none; margin-bottom:-2px;}
         .center-key { font-size: 1.5rem; font-weight: bold; color: #333; line-height: 1; pointer-events: none;}
 
-        /* FIX: Live Mode Feedback - FULL CIRCLE PULSE */
+        /* Live Mode Feedback Styles */
         .center-hub.listening {
-            animation: pulse-full 2s infinite;
-            background-color: #ffebee; /* Heller Roter Hintergrund */
+            animation: pulse-border 2s infinite;
             border-color: #d32f2f;
         }
-        @keyframes pulse-full {
-            0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4); background-color: #fff; }
-            50% { box-shadow: 0 0 0 15px rgba(211, 47, 47, 0); background-color: #ffcdd2; }
-            100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); background-color: #fff; }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.2); }
+            50% { box-shadow: 0 0 0 15px rgba(211, 47, 47, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(211, 47, 47, 0); }
         }
 
         .segment-group { position: absolute; width: 40px; height: 50%; top: 0; left: 50%; margin-left: -20px; transform-origin: bottom center; pointer-events: none; z-index: 5; transition: transform 0.1s; }
@@ -386,9 +386,8 @@
         const noteIndexMap = {}; notes.forEach((n,i) => noteIndexMap[n] = i);
         const guitarBaseStrings = [4, 9, 2, 7, 11, 4];
 
-        // FIXED: Expanded Guitar Chords (Complete m7b5 for all keys)
- // FIXED: Complete Guitar Chord Library (German H + English B support)
- const guitarChordLibrary = {
+        // Extended Guitar Chords (m7, m7b5 included)
+        const guitarChordLibrary = {
             // C
             "C": [-1, 3, 2, 0, 1, 0], "Cm": [-1, 3, 5, 5, 4, 3], "Cmaj7": [-1, 3, 2, 0, 0, 0], "C7": [-1, 3, 2, 3, 1, 0],
             "Cm7": [-1, 3, 5, 3, 4, 3], "Cm7b5": [-1, 3, 4, 3, 4, -1],
@@ -549,9 +548,6 @@
             { title: "Halo", interpret: "Beyoncé", key: "A", type: "major", seq: ["I", "VI", "IV", "V"] },
             { title: "An Tagen wie diesen", interpret: "Die Toten Hosen", key: "D", type: "major", seq: ["I", "V", "VI", "IV"] },
             { title: "Zusammen", interpret: "Fanta4", key: "C", type: "major", seq: ["VI", "IV", "I", "V"] },
-            { title: "Wannsee", interpret: "Die Toten Hosen", key: "Eb", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Westerland", interpret: "Die Ärzte", key: "G", type: "major", seq: ["I", "V", "VI", "IV"] },
-            { title: "Zu Spät", interpret: "Die Ärzte", key: "G", type: "major", seq: ["I", "II", "IV", "V"] },
             
             // Pop Minor / Rock
             { title: "Zombie", interpret: "The Cranberries", key: "E", type: "minor", seq: ["i", "bVI", "bIII", "bVII"] },
@@ -570,8 +566,7 @@
             { title: "Seven Nation Army", interpret: "The White Stripes", key: "E", type: "minor", seq: ["i", "bIII", "i", "bVII", "bVI", "V"] },
             { title: "Mad World", interpret: "Tears for Fears", key: "F", type: "minor", seq: ["i", "bIII", "bVII", "IV"] },
             { title: "Get Lucky", interpret: "Daft Punk", key: "F#", type: "minor", seq: ["i", "bIII", "iv", "V"] },
-            { title: "Junge", interpret: "Die Ärzte", key: "Am", type: "minor", seq: ["bVI", "bVII", "iv", "i"] },
-
+            
             // New Andalusian Examples
             { title: "Sultans of Swing", interpret: "Dire Straits", key: "Dm", type: "minor", seq: ["i", "bVII", "bVI", "V"] },
             { title: "Happy Together", interpret: "The Turtles", key: "F#", type: "minor", seq: ["i", "bVII", "bVI", "V"] },
@@ -871,55 +866,24 @@
 
         function drawGuitarChart(noteName, quality) {
             instrumentContainer.innerHTML = '';
+            let key = noteName;
+            if (quality.includes("m") && !quality.includes("maj")) key += "m";
+            else if (quality.includes("maj7")) key += "maj7";
+            else if (quality.includes("7")) key += "7";
+            key = key.replace(" ", "");
             
-            // 1. Suffix Bestimmung (Reihenfolge ist entscheidend!)
-            let suffix = "";
-            
-            // PRIO 1: Vermindert / Halbvermindert muss ZUERST geprüft werden
-            // "quality" ist hier der volle String, z.B. "H°" oder "Hm7b5"
-            if (quality.includes("°") || quality.includes("m7b5") || quality.includes("Verm")) {
-                suffix = "m7b5"; 
-            } 
-            // PRIO 2: Spezielle Septakkorde
-            else if (quality.includes("maj7")) {
-                suffix = "maj7";
-            } 
-            else if (quality.includes("m7")) {
-                suffix = "m7";
-            } 
-            else if (quality.includes("7") && !quality.includes("m")) { // Nur 7, kein m
-                suffix = "7";
-            }
-            // PRIO 3: Einfaches Moll
-            else if (quality.includes("m") || quality.includes("Moll")) {
-                suffix = "m";
-            }
-            // PRIO 4: Standard Dur (nichts tun, suffix bleibt leer)
-            
-            // 2. Key zusammenbauen
-            let key = (noteName + suffix).replace(" ", "");
             let pattern = guitarChordLibrary[key];
-
-            // 3. Fallbacks
             if (!pattern && enharmonicMap[noteName]) {
-                let altKey = (enharmonicMap[noteName] + suffix).replace(" ", "");
+                let altKey = key.replace(noteName, enharmonicMap[noteName]);
                 pattern = guitarChordLibrary[altKey];
                 if(pattern) key = altKey;
             }
-
-            // Fallback für H vs B
-            if (!pattern && noteName === "H") pattern = guitarChordLibrary["B" + suffix];
-            if (!pattern && noteName === "B") pattern = guitarChordLibrary["H" + suffix];
-
-            // 4. Anzeige-Fallback (wenn m7b5 fehlt -> Moll)
             if (!pattern) { 
-                if(suffix === "m7b5") pattern = guitarChordLibrary[noteName+"m"];
-                else pattern = guitarChordLibrary[noteName];
+                if(quality.includes("m")) pattern = guitarChordLibrary[noteName+"m"] || guitarChordLibrary[enharmonicMap[noteName]+"m"];
+                else pattern = guitarChordLibrary[noteName] || guitarChordLibrary[enharmonicMap[noteName]];
             }
-            
             if (!pattern) pattern = [-1,-1,-1,-1,-1,-1];
 
-            // --- ZEICHNEN ---
             let minFret = 99;
             pattern.forEach(p => { if(p > 0 && p < minFret) minFret = p; });
             if(minFret === 99) minFret = 1;
@@ -929,11 +893,7 @@
             const chart = document.createElement('div');
             chart.className = 'chord-chart';
             const title = document.createElement('div');
-            
-            // Titel basierend auf Key, aber "m7b5" sieht besser aus als "m" bei Fallback
-            title.className = 'instrument-title'; 
-            title.innerHTML = key; 
-            
+            title.className = 'instrument-title'; title.innerHTML = key;
             chart.appendChild(title);
 
             const grid = document.createElement('div');
@@ -978,6 +938,47 @@
             chart.appendChild(grid);
             instrumentContainer.appendChild(chart);
         }
+
+        function drawPiano(vizNotes, chordLabelFull) {
+            instrumentContainer.innerHTML = '';
+            const container = document.createElement('div'); container.className = 'piano-container';
+            
+            const title = document.createElement('div');
+            title.className = 'instrument-title'; title.innerHTML = chordLabelFull;
+            container.appendChild(title);
+
+            const pianoDiv = document.createElement('div'); pianoDiv.className = 'piano-keys';
+            const pattern = ['w','b','w','b','w','w','b','w','b','w','b','w'];
+            
+            let minMidi = 999;
+            vizNotes.forEach(n => {
+               let m = (n.octave + 1) * 12 + noteIndexMap[n.note.replace('#','')];
+               if(m < minMidi) minMidi = m;
+            });
+            let startOctave = Math.floor(minMidi / 12) - 1; 
+
+            for(let oct=0; oct<2; oct++) {
+                const currentOctave = startOctave + oct;
+                pattern.forEach((type, i) => {
+                    const key = document.createElement('div');
+                    key.className = `key ${type === 'w' ? 'white' : 'black'}`;
+                    const noteName = notes[i];
+                    const isActive = vizNotes.some(n => n.note === noteName && n.octave === currentOctave);
+                    if (isActive) {
+                        key.classList.add('active');
+                        if (noteName === currentRootNoteName) {
+                            key.classList.add('root');
+                            key.style.backgroundColor = '#ff6b6b';
+                            key.style.borderColor = "#b71c1c";
+                        }
+                    }
+                    pianoDiv.appendChild(key);
+                });
+            }
+            container.appendChild(pianoDiv);
+            instrumentContainer.appendChild(container);
+        }
+
         function updateInstrumentDisplay() {
             if (lastPlayedNotes.length > 0) {
                 const isGuitar = guitarToggle.checked;
@@ -1036,7 +1037,7 @@
 
         let currentVizNotes = [];
            
- function playChordFromPosition(posData) {
+        function playChordFromPosition(posData) {
             initAudio(); 
             const isJazz = jazzToggle.checked; 
             const isGuitar = guitarToggle.checked; 
@@ -1053,7 +1054,6 @@
             const keyCenterName = notes[indexAtTop]; 
             
             let semitoneOffset = modeData.interval;
-            // Korrektur für Indices über 12 hinaus (z.B. VII beim Rechnen)
             if (posData.index === 9 || posData.index === 11) semitoneOffset -= 12; 
             
             let absRootIndex = safeMod(notes.indexOf(keyCenterName) + semitoneOffset, 12);
@@ -1078,44 +1078,34 @@
                 // --- GITARREN LOGIK ---
                 let libSuffix = "";
                 
-                // MAPPING LOGIK (Zwingt richtige Griffe für Pop & Jazz)
-                if (chordLabelSuffix === "Dur") {
-                    libSuffix = ""; 
-                } else if (chordLabelSuffix === "Moll") {
+                if (chordLabelSuffix === "Moll") {
                     libSuffix = "m"; 
+                } else if (chordLabelSuffix === "m7") {
+                    libSuffix = "m7"; 
                 } else if (chordLabelSuffix === "Verm." || chordLabelSuffix === "m7b5") {
-                    // WICHTIG: Sowohl Pop "Verm." als auch Jazz "m7b5" nutzen den m7b5-Griff!
                     libSuffix = "m7b5"; 
                 } else if (chordLabelSuffix === "7(b9)") {
-                    libSuffix = "7"; // Vereinfachung für Gitarre
-                } else {
-                    // Fängt m7, maj7, 7 ab
+                    libSuffix = "7"; 
+                } else if (chordLabelSuffix.includes("7")) {
                     libSuffix = chordLabelSuffix; 
                 }
 
-                // Konstruiere den Suchbegriff, z.B. "Hm7b5"
                 let lookupKey = (absRootName + libSuffix).replace(" ", "");
                 let pattern = guitarChordLibrary[lookupKey];
                 
-                // Fallback 1: Enharmonische Verwechslung (z.B. G# -> Ab)
                 if (!pattern && enharmonicMap[absRootName]) {
                     let altRoot = enharmonicMap[absRootName];
                     let altKey = (altRoot + libSuffix).replace(" ", "");
                     pattern = guitarChordLibrary[altKey];
                 }
                 
-                // Fallback 2: Englisches B vs Deutsches H Problem lösen
-                if (!pattern && absRootName === "H") {
-                     pattern = guitarChordLibrary["B" + libSuffix];
-                }
-
-                // Fallback 3 (Notfall): Wenn m7b5 fehlt, versuche Moll (sollte nicht mehr passieren)
                 if (!pattern) {
-                    if (libSuffix === "m7b5") pattern = guitarChordLibrary[absRootName+"m"];
+                    if (libSuffix === "m7b5") {
+                         pattern = guitarChordLibrary[absRootName+"m"];
+                    }
+                    else if (libSuffix.includes("m")) pattern = guitarChordLibrary[absRootName+"m"];
                     else pattern = guitarChordLibrary[absRootName];
                 }
-                
-                // Wenn immer noch nichts: Leere Saiten (X)
                 if (!pattern) pattern = [-1,-1,-1,-1,-1,-1];
 
                 const openStringMidis = [40, 45, 50, 55, 59, 64];
@@ -1132,6 +1122,7 @@
                         currentVizNotes.push({ note: noteName, octave: octave });
                     }
                 });
+
             } else {
                 // --- PIANO LOGIK ---
                 const intervals = isJazz ? modeData.jazz.ivs : modeData.pop.ivs;
@@ -1155,6 +1146,7 @@
             drawNotation(playedNotesInfo);
             updateInstrumentDisplay();
         }
+
         // --- FILTER & SEARCH ---
         function clearSearch() {
             songSearch.value = "";
@@ -1233,55 +1225,31 @@
             const isMinor = song.type === 'minor';
             tonalityToggle.checked = isMinor;
             
-            // FIX: "m" entfernen für die Suche im notes-Array (z.B. "Am" -> "A")
-            const searchKey = song.key.replace("m", "");
-            const targetIndex = notes.indexOf(searchKey); 
-            
-            // Falls Key nicht gefunden (sollte nicht passieren), nimm C (0)
-            const safeIndex = targetIndex === -1 ? 0 : targetIndex;
-
-            let wheelTargetIndex = safeIndex;
+            const targetIndex = notes.indexOf(song.key); 
+            let wheelTargetIndex = targetIndex;
             if(isMinor) {
-                // Im Moll-Modus ist die "i" (Index 9) das Zentrum
-                wheelTargetIndex = safeMod(safeIndex + 3, 12);
+                wheelTargetIndex = safeMod(targetIndex + 3, 12);
             }
             currentStep = -wheelTargetIndex;
             
-            // UI Updates
             songSearch.value = song.title;
             document.getElementById('progList').innerHTML = ""; 
             document.getElementById('clearBtn').style.display = 'block';
 
-            // REPLAY CARD ERSTELLEN
             const replayArea = document.getElementById('replayArea');
-            replayArea.innerHTML = ''; 
-            
-            const card = document.createElement('div');
-            card.className = 'replay-card';
-            
             const interpretDisplay = song.interpret ? song.interpret : "";
-            const seqDisplay = song.seq.join(' – ');
-
-            card.innerHTML = `
-                <div class="replay-title">
-                    🎵 ${song.title} 
-                    <span style="font-weight:normal; font-size:0.9rem; color:#555; margin-left:5px;">
-                        (${seqDisplay})
-                    </span>
+            replayArea.innerHTML = `
+                <div class="replay-card" onclick="loadAndPlaySong(currentPlayingSong, this)">
+                    <div class="replay-title">🎵 ${song.title}</div>
+                    <div class="replay-hint">${interpretDisplay} • Tippen zum erneuten Abspielen</div>
                 </div>
-                <div class="replay-hint">${interpretDisplay} • Tippen zum erneuten Abspielen</div>
             `;
-
-            card.onclick = () => loadAndPlaySong(song, card);
-            replayArea.appendChild(card);
-
             currentPlayingSong = song;
 
             updateUI(); 
             setWheelRotation(currentStep * 30); 
             
-            // Starten
-            await playProgression(song, btn || card);
+            await playProgression(song, btn || document.querySelector('.replay-card'));
         }
 
         function playKeyCenter() {

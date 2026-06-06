@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bass Root Detector</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .tuner-container {
+            text-align: center;
+            background: #1e1e1e;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 320px;
+            border: 1px solid #333;
+        }
+
+        h1 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        .note-display {
+            font-size: 6rem;
+            font-weight: 800;
+            color: #00e676; 
+            min-height: 120px;
+            line-height: 1;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(0, 230, 118, 0.2);
+            transition: color 0.2s;
+        }
+
+        .note-display.uncertain {
+            color: #444; /* Grau, wenn unsicher */
+            text-shadow: none;
+        }
+
+        .status-display {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 2rem;
+            height: 1.5em;
+        }
+
+        button {
+            background: #2979ff;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
+            box-shadow: 0 4px 15px rgba(41, 121, 255, 0.3);
+        }
+
+        button:hover {
+            background: #5393ff;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.active {
+            background: #ff1744;
+            box-shadow: 0 4px 15px rgba(255, 23, 68, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tuner-container">
+        <h1>Live Root Detect (150Hz LP)</h1>
+        
+        <div id="note" class="note-display uncertain">--</div>
+        
+        <div id="status" class="status-display">Warte auf Start...</div>
+        
+        <button id="toggleBtn">Mikrofon Starten</button>
+    </div>
+
+<script>
+    /**
+     * KONFIGURATION
+     */
+    // Puffergröße erhöht für bessere Bass-Erkennung
+    const BUFFER_SIZE = 4096; 
+    const FILTER_CUTOFF = 150; // Hz
+    
+    // Stabilisierung: Wie viele Frames muss ein Ton gleich bleiben?
+    // Bei 60fps sind 10 Frames ca. 160ms. Das filtert kurze Drum-Kicks raus.
+    const STABILITY_THRESHOLD = 8; 
+
+    let audioContext = null;
+    let analyser = null;
+    let mediaStreamSource = null;
+    let isRunning = false;
+    let rafID = null;
+    
+    let buf = new Float32Array(BUFFER_SIZE); 
+    const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+    // UI Referenzen
+    const noteElem = document.getElementById("note");
+    const statusElem = document.getElementById("status");
+    const btnElem = document.getElementById("toggleBtn");
+
+    // Variablen für die Stabilisierungs-Logik
+    let lastDetectedNoteIndex = -1;
+    let stabilityCounter = 0;
+
+    /**
+     * START / STOP
+     */
+    btnElem.addEventListener("click", () => {
+        if (isRunning) stopAudio();
+        else initAudio();
+    });
+
+    async function initAudio() {
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { 
+                    echoCancellation: false, 
+                    autoGainControl: false, // Wichtig für Musik, sonst "pumpt" das Mic
+                    noiseSuppression: false 
+                } 
+            });
+
+            mediaStreamSource = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = BUFFER_SIZE;
+
+            // --- FILTER ---
+            // Schneidet Gesang und Gitarren ab
+            const filter = audioContext.createBiquadFilter();
+            filter.type = "lowpass";
+            filter.frequency.value = FILTER_CUTOFF; 
+
+            // GainNode (Optional): Signal etwas verstärken, da der Filter Energie nimmt
+            const gain = audioContext.createGain();
+            gain.gain.value = 1.2; 
+
+            mediaStreamSource.connect(filter);
+            filter.connect(gain);
+            gain.connect(analyser);
+
+            isRunning = true;
+            btnElem.textContent = "Stop";
+            btnElem.classList.add("active");
+            statusElem.innerText = "Höre zu...";
+            noteElem.classList.remove("uncertain");
+            
+            updatePitch();
+
+        } catch (err) {
+            console.error(err);
+            statusElem.innerText = "Fehler: Kein Mikrofonzugriff";
+        }
+    }
+
+    function stopAudio() {
+        isRunning = false;
+        btnElem.textContent = "Mikrofon Starten";
+        btnElem.classList.remove("active");
+        if (rafID) cancelAnimationFrame(rafID);
+        if (audioContext) audioContext.close();
+        
+        noteElem.innerText = "--";
+        noteElem.classList.add("uncertain");
+        statusElem.innerText = "Gestoppt";
+    }
+
+    /**
+     * HAUPTSCHLEIFE
+     */
+    function updatePitch() {
+        if (!isRunning) return;
+
+        analyser.getFloatTimeDomainData(buf);
+        const ac = autoCorrelate(buf, audioContext.sampleRate);
+
+        if (ac === -1) {
+            // Signal zu leise oder unklar
+            // Wir setzen den Zähler zurück, aber löschen die Anzeige nicht sofort (für Lesbarkeit)
+            stabilityCounter = Math.max(0, stabilityCounter - 1);
+            if (stabilityCounter === 0) {
+                noteElem.classList.add("uncertain"); // Visuelles Feedback (ausgegraut)
+            }
+        } else {
+            const pitch = ac;
+            const noteIndex = noteFromPitch(pitch) % 12;
+
+            // --- Stabilisierungs-Logik ---
+            if (noteIndex === lastDetectedNoteIndex) {
+                stabilityCounter++;
+            } else {
+                // Neuer Ton erkannt: Zähler Reset
+                lastDetectedNoteIndex = noteIndex;
+                stabilityCounter = 0;
+            }
+
+            // Nur anzeigen, wenn stabil genug
+            if (stabilityCounter >= STABILITY_THRESHOLD) {
+                const noteName = noteStrings[noteIndex];
+                noteElem.innerText = noteName;
+                noteElem.classList.remove("uncertain");
+                statusElem.innerText = `${Math.round(pitch)} Hz (Stabil)`;
+                
+                // Zähler deckeln, damit er bei Wechsel nicht ewig zum runterzählen braucht
+                stabilityCounter = STABILITY_THRESHOLD + 5; 
+            }
+        }
+
+        rafID = requestAnimationFrame(updatePitch);
+    }
+
+    /**
+     * ALGORITHMUS
+     */
+    function autoCorrelate(buf, sampleRate) {
+        let size = buf.length;
+        let rms = 0;
+
+        // RMS Berechnung
+        for (let i = 0; i < size; i++) {
+            const val = buf[i];
+            rms += val * val;
+        }
+        rms = Math.sqrt(rms / size);
+
+        // Threshold leicht erhöht, da wir Musik analysieren (Hintergrundrauschen ist höher als bei Stille)
+        if (rms < 0.02) return -1;
+
+        let r1 = 0, r2 = size - 1;
+        const thres = 0.2;
+        for (let i = 0; i < size / 2; i++) {
+            if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+        }
+        for (let i = 1; i < size / 2; i++) {
+            if (Math.abs(buf[size - i]) < thres) { r2 = size - i; break; }
+        }
+
+        buf = buf.slice(r1, r2);
+        size = buf.length;
+
+        const c = new Array(size).fill(0);
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size - i; j++) {
+                c[i] = c[i] + buf[j] * buf[j + i];
+            }
+        }
+
+        let d = 0;
+        while (c[d] > c[d + 1]) d++;
+        let maxval = -1, maxpos = -1;
+        for (let i = d; i < size; i++) {
+            if (c[i] > maxval) {
+                maxval = c[i];
+                maxpos = i;
+            }
+        }
+        let T0 = maxpos;
+
+        const x1 = c[T0 - 1], x2 = c[T0], x3 = c[T0 + 1];
+        const a = (x1 + x3 - 2 * x2) / 2;
+        const b = (x3 - x1) / 2;
+        if (a) T0 = T0 - b / (2 * a);
+
+        return sampleRate / T0;
+    }
+
+    function noteFromPitch(frequency) {
+        const noteNum = 12 * (Math.log(frequency / 440) / Math.log(2));
+        return Math.round(noteNum) + 69;
+    }
+
+</script>
+</body>
+</html>

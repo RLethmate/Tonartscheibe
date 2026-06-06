@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toto Analyzer</title>
+    <style>
+        body {
+            background-color: #0d0d0d;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; cursor: pointer;
+        }
+
+        .tuner-container { text-align: center; width: 100%; max-width: 450px; }
+
+        .note-wrapper { position: relative; display: inline-block; margin-bottom: 20px; }
+
+        .note-display {
+            font-size: 9rem;
+            font-weight: 900;
+            color: #333;
+            line-height: 1;
+            transition: color 0.1s;
+        }
+
+        .note-display.active {
+            color: #00e676;
+            text-shadow: 0 0 50px rgba(0, 230, 118, 0.5);
+        }
+
+        .octave-display {
+            font-size: 2.5rem; color: #555; position: absolute; top: 10px; right: -40px; font-weight: 400;
+        }
+        .octave-display.active { color: #00e676; }
+
+        /* Controls */
+        .controls {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .control-group { margin-bottom: 15px; }
+        .control-group label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; color: #aaa; }
+        
+        input[type=range] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px; width: 20px;
+            border-radius: 50%; background: #2979ff;
+            cursor: pointer; margin-top: -8px;
+        }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%; height: 4px; background: #444; border-radius: 2px;
+        }
+
+        .debug-info { margin-top: 10px; font-family: monospace; color: #555; font-size: 0.8rem; text-align: right; }
+
+    </style>
+</head>
+<body>
+
+    <div id="start-overlay">
+        <div style="font-size: 4rem; margin-bottom: 20px;">🥁</div>
+        <h2>Klicken für Audio-Start</h2>
+    </div>
+
+    <div class="tuner-container">
+        <div class="note-wrapper">
+            <div id="note" class="note-display">--</div>
+            <div id="octave" class="octave-display"></div>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label>
+                    <span>Low-Pass Filter (Cutoff)</span>
+                    <span id="lblLP">150 Hz</span>
+                </label>
+                <input type="range" id="sliderLP" min="80" max="400" value="150">
+            </div>
+
+            <div class="control-group">
+                <label>
+                    <span>Min. Lautstärke (Sensitivität)</span>
+                    <span id="lblSens">High</span>
+                </label>
+                <input type="range" id="sliderSens" min="0" max="50" value="15">
+            </div>
+            
+            <div class="debug-info" id="debugStr">Raw: - Hz</div>
+        </div>
+    </div>
+
+<script>
+    /**
+     * CONFIG & STATE
+     */
+    const CONFIG = {
+        bufferSize: 2048,      
+        sampleSkip: 2,         
+        // Voting Buffer Größe: Höher = Stabiler aber langsamer.
+        // 12 Frames bei 60Hz = ca. 200ms Glättung. Das überbrückt einen Kick-Drum Schlag.
+        historySize: 12  
+    };
+
+    let audioContext = null;
+    let analyser = null;
+    let biquadFilter = null;
+    let buf = new Float32Array(CONFIG.bufferSize);
+    let isRunning = false;
+
+    // Frequenz-Tabelle
+    let NOTE_TABLE = []; 
+    const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+    // Ring-Buffer für Majority Voting
+    let noteHistory = []; 
+
+    // UI Elemente
+    const ui = {
+        note: document.getElementById('note'),
+        octave: document.getElementById('octave'),
+        sliderLP: document.getElementById('sliderLP'),
+        lblLP: document.getElementById('lblLP'),
+        sliderSens: document.getElementById('sliderSens'),
+        lblSens: document.getElementById('lblSens'),
+        debug: document.getElementById('debugStr'),
+        overlay: document.getElementById('start-overlay')
+    };
+
+    // --- SETUP ---
+    function generateNoteTable() {
+        // B0 (23) bis ca. 400Hz abdecken
+        for (let i = 23; i <= 80; i++) {
+            const centerFreq = 440 * Math.pow(2, (i - 69) / 12);
+            const boundaryFactor = Math.pow(2, 1/24); 
+            NOTE_TABLE.push({
+                note: NOTE_NAMES[i % 12],
+                octave: Math.floor(i / 12) - 1,
+                min: centerFreq / boundaryFactor,
+                max: centerFreq * boundaryFactor,
+                id: i // MIDI ID als eindeutiger Key
+            });
+        }
+    }
+    generateNoteTable();
+
+    // --- EVENT LISTENERS ---
+    ui.overlay.addEventListener('click', async () => {
+        ui.overlay.style.display = 'none';
+        await startAudioEngine();
+    });
+
+    ui.sliderLP.addEventListener('input', (e) => {
+        const val = e.target.value;
+        ui.lblLP.innerText = val + " Hz";
+        if (biquadFilter) {
+            biquadFilter.frequency.value = val;
+        }
+    });
+
+    ui.sliderSens.addEventListener('input', (e) => {
+        ui.lblSens.innerText = e.target.value + "%";
+    });
+
+
+    // --- AUDIO ENGINE ---
+    async function startAudioEngine() {
+        if (isRunning) return;
+        
+        try {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+            
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    autoGainControl: false,
+                    noiseSuppression: false,
+                    latency: 0
+                }
+            });
+
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = CONFIG.bufferSize;
+
+            biquadFilter = audioContext.createBiquadFilter();
+            biquadFilter.type = "lowpass";
+            biquadFilter.frequency.value = ui.sliderLP.value; // Initialwert vom Slider
+
+            source.connect(biquadFilter);
+            biquadFilter.connect(analyser);
+
+            isRunning = true;
+            loop();
+
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    function loop() {
+        if (!isRunning) return;
+        requestAnimationFrame(loop);
+
+        analyser.getFloatTimeDomainData(buf);
+        
+        // Sensitivität aus Slider holen (0.005 bis 0.05)
+        const sensVal = parseInt(ui.sliderSens.value) / 1000; 
+        
+        const freq = fastAutoCorrelate(buf, audioContext.sampleRate, sensVal);
+
+        // 1. Raw Detection & History Update
+        let detectedId = -1; // -1 = Nichts/Rauschen
+        let debugText = "Raw: --";
+
+        if (freq !== -1) {
+            // Wir suchen etwas großzügiger (+/- 2 Hz Toleranz), falls die Stimmung nicht 100% passt
+            const candidate = NOTE_TABLE.find(item => freq >= item.min && freq <= item.max);
+            if (candidate) {
+                detectedId = candidate.id;
+                debugText = `Raw: ${candidate.note}${candidate.octave} (${Math.round(freq)}Hz)`;
+            }
+        }
+        ui.debug.innerText = debugText;
+
+        // Push in History (FIFO)
+        noteHistory.push(detectedId);
+        if (noteHistory.length > CONFIG.historySize) {
+            noteHistory.shift();
+        }
+
+        // 2. Majority Vote
+        processVoting();
+    }
+
+    function processVoting() {
+        // Zähle Vorkommen im Puffer
+        const counts = {};
+        let maxCount = 0;
+        let winner = -1;
+
+        for (let id of noteHistory) {
+            counts[id] = (counts[id] || 0) + 1;
+            if (counts[id] > maxCount) {
+                maxCount = counts[id];
+                winner = id;
+            }
+        }
+
+        // Entscheide: Haben wir einen stabilen Gewinner?
+        // Bedingung: Der Gewinner muss mehr als 50% des Puffers ausmachen UND darf nicht "Stille" (-1) sein.
+        const threshold = CONFIG.historySize * 0.5; // > 50%
+        
+        if (winner !== -1 && maxCount > threshold) {
+            const noteObj = NOTE_TABLE.find(n => n.id === winner);
+            if (noteObj) {
+                renderNote(noteObj.note, noteObj.octave, true);
+                return;
+            }
+        }
+        
+        // Wenn der Puffer hauptsächlich aus -1 besteht (Stille), dimmen wir aus
+        if (winner === -1 && maxCount > threshold) {
+             renderNote("--", "", false);
+        }
+        // Ansonsten (Chaos im Puffer): UI einfach stehen lassen (kein Update), um Flackern zu vermeiden
+    }
+
+    let currentRendered = "";
+
+    function renderNote(note, octave, isActive) {
+        const str = note + octave;
+        
+        // Nur DOM anfassen wenn nötig
+        if (isActive) {
+            if (ui.note.innerText !== note) ui.note.innerText = note;
+            if (ui.octave.innerText !== String(octave)) ui.octave.innerText = octave;
+            ui.note.classList.add('active');
+            ui.octave.classList.add('active');
+        } else {
+            ui.note.classList.remove('active');
+            ui.octave.classList.remove('active');
+        }
+    }
+
+
+    /**
+     * ALGORITHMUS (Optimiert)
+     */
+    function fastAutoCorrelate(buf, sampleRate, rmsThreshold) {
+        let size = buf.length;
+        let rms = 0;
+        // RMS Check (grob)
+        for (let i = 0; i < size; i += 4) rms += buf[i] * buf[i];
+        rms = Math.sqrt(rms / (size / 4));
+        
+        if (rms < rmsThreshold) return -1;
+
+        // Suchbereich dynamisch begrenzen basierend auf Slider?
+        // Wir lassen hier den weiten Bereich, der Filter macht die Arbeit.
+        const minFreq = 30; 
+        const maxFreq = parseInt(ui.sliderLP.value) + 50; // Etwas Puffer über dem Filter
+        
+        const minPeriod = Math.floor(sampleRate / maxFreq);
+        const maxPeriod = Math.floor(sampleRate / minFreq);
+
+        if (maxPeriod > size) return -1;
+
+        let bestCorrelation = -1;
+        let bestPeriod = -1;
+
+        for (let lag = minPeriod; lag <= maxPeriod; lag++) {
+            let sum = 0;
+            const maxI = size - lag;
+            // Skip 2 ist guter Kompromiss Speed/Genauigkeit
+            for (let i = 0; i < maxI; i += 2) {
+                sum += buf[i] * buf[i + lag];
+            }
+            if (sum > bestCorrelation) {
+                bestCorrelation = sum;
+                bestPeriod = lag;
+            }
+        }
+
+        // Parabolische Interpolation
+        const T0 = bestPeriod;
+        if (T0 <= 0 || T0 >= size - 1) return -1; // Randcheck
+
+        // Exakte Nachberechnung um Peak
+        function getExact(l) {
+            let s = 0;
+            for (let i = 0; i < size - l; i++) s += buf[i] * buf[i + l];
+            return s;
+        }
+
+        const x1 = getExact(T0 - 1);
+        const x2 = getExact(T0);
+        const x3 = getExact(T0 + 1);
+        
+        const a = (x1 + x3 - 2 * x2) / 2;
+        const b = (x3 - x1) / 2;
+        let exactPeriod = T0;
+        if (a) exactPeriod = T0 - b / (2 * a);
+
+        return sampleRate / exactPeriod;
+    }
+
+</script>
+</body>
+</html>

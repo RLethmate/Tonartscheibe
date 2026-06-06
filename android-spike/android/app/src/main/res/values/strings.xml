@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Improscheibe Mic-Spike</string>
+    <string name="title_activity_main">Improscheibe Mic-Spike</string>
+    <string name="package_name">de.improscheibe.micspike</string>
+    <string name="custom_url_scheme">de.improscheibe.micspike</string>
+</resources>

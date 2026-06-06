@@ -1502,7 +1502,7 @@
             const micBtn = document.getElementById('micBtn');
             const searchInput = document.getElementById('songSearch');
             const hub = document.querySelector('.center-hub');
-            
+
             isLiveMode = !isLiveMode;
 
             if (isLiveMode) {
@@ -1511,9 +1511,20 @@
                 hub.classList.add('listening');
                 searchInput.placeholder = "Höre zu...";
                 searchInput.disabled = true; 
-                startLiveSimulation(); 
-                
+
+                // Start live microphone + chord/key detection (FastAPI WS)
+                startLiveDetection();
             } else {
+                // AUS: UI Reset
+                micBtn.classList.remove('active');
+                hub.classList.remove('listening');
+                searchInput.placeholder = "Song suchen...";
+                searchInput.disabled = false;
+
+                // Stop live detection
+                stopLiveDetection();
+            }
+        }else {
                 // AUS: UI Reset
                 micBtn.classList.remove('active');
                 hub.classList.remove('listening');
@@ -1550,6 +1561,309 @@
         function stopLiveSimulation() {
             clearInterval(liveInterval);
         }
+
+        /* ============================================================
+           LIVE MODE (Mic -> WebSocket -> FastAPI)  |  Non-invasive add-on
+           - Triggered ONLY via toggleLiveMode() when isLiveMode becomes true
+           - Sends Float32 mono @16kHz over WS (binary)
+           - Receives JSON with chord + key (top2)
+           - Updates wheel via existing setWheelRotation/currentStep/updateKeyCenter
+           ============================================================ */
+
+        // You can override this from outside (e.g. before this script runs):
+        // window.LIVE_WS_URL = "ws://localhost:8000/ws";
+        const DEFAULT_LIVE_WS_URL = (() => {
+            const proto = (location.protocol === "https:") ? "wss" : "ws";
+            // Assumption: backend runs on :8000 if served separately
+            return `${proto}://${location.hostname}:8000/ws`;
+        })();
+
+        const liveState = {
+            ws: null,
+            wsUrl: null,
+            audioCtx: null,
+            mediaStream: null,
+            processor: null,
+            srcNode: null,
+            inSampleRate: null,
+            // lightweight debouncing for key wheel updates
+            lastKeyTonic: null,
+            lastKeyMode: null,
+            sameKeyCount: 0,
+            // for restoring UI placeholder
+            originalPlaceholder: null,
+            // fail-safe
+            started: false
+        };
+
+        function startLiveDetection() {
+            if (liveState.started) return;
+            liveState.started = true;
+
+            const searchInput = document.getElementById('songSearch');
+            if (searchInput) liveState.originalPlaceholder = searchInput.placeholder;
+
+            liveState.wsUrl = window.LIVE_WS_URL || DEFAULT_LIVE_WS_URL;
+
+            // 1) Connect WS first (so we can fail fast)
+            try {
+                const ws = new WebSocket(liveState.wsUrl);
+                ws.binaryType = "arraybuffer";
+                liveState.ws = ws;
+
+                ws.onopen = () => {
+                    // Send config (crema + pop defaults; backend has sane fallbacks)
+                    sendLiveConfig();
+                    // Start mic only after WS is open
+                    startMicStream().catch(err => {
+                        console.error("[LiveMode] Mic start failed:", err);
+                        // graceful fallback: stop everything and revert toggle UI
+                        stopLiveDetection(true);
+                    });
+                };
+
+                ws.onmessage = (ev) => {
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        handleLiveMessage(msg);
+                    } catch (e) {
+                        // ignore non-JSON
+                    }
+                };
+
+                ws.onerror = (e) => {
+                    console.error("[LiveMode] WS error:", e);
+                };
+
+                ws.onclose = () => {
+                    // If WS closes while live mode is on, stop mic too.
+                    if (liveState.started) {
+                        console.warn("[LiveMode] WS closed.");
+                        stopLiveDetection(true);
+                    }
+                };
+            } catch (e) {
+                console.error("[LiveMode] WS init failed:", e);
+                stopLiveDetection(true);
+            }
+        }
+
+        function stopLiveDetection(silent = false) {
+            // stop mic
+            try {
+                if (liveState.processor) {
+                    liveState.processor.onaudioprocess = null;
+                    liveState.processor.disconnect();
+                }
+            } catch (_) {}
+            try { if (liveState.srcNode) liveState.srcNode.disconnect(); } catch (_) {}
+            try {
+                if (liveState.mediaStream) {
+                    liveState.mediaStream.getTracks().forEach(t => t.stop());
+                }
+            } catch (_) {}
+            try {
+                if (liveState.audioCtx && liveState.audioCtx.state !== "closed") {
+                    liveState.audioCtx.close();
+                }
+            } catch (_) {}
+
+            liveState.processor = null;
+            liveState.srcNode = null;
+            liveState.mediaStream = null;
+            liveState.audioCtx = null;
+            liveState.inSampleRate = null;
+
+            // close ws
+            try {
+                if (liveState.ws && (liveState.ws.readyState === WebSocket.OPEN || liveState.ws.readyState === WebSocket.CONNECTING)) {
+                    liveState.ws.close();
+                }
+            } catch (_) {}
+            liveState.ws = null;
+
+            // reset key debounce
+            liveState.lastKeyTonic = null;
+            liveState.lastKeyMode = null;
+            liveState.sameKeyCount = 0;
+
+            // restore placeholder if we were the reason it changed
+            const searchInput = document.getElementById('songSearch');
+            if (searchInput && liveState.originalPlaceholder && !silent) {
+                // Only restore if still in live mode OFF path (toggleLiveMode already sets placeholder)
+                // If silent stop (error), don't fight UI.
+            }
+
+            liveState.started = false;
+        }
+
+        function sendLiveConfig() {
+            if (!liveState.ws || liveState.ws.readyState !== WebSocket.OPEN) return;
+
+            // Keep it minimal and safe: use your backend defaults, but explicitly set core ones.
+            const cfg = {
+                type: "config",
+                engine: "crema",
+                mode: "pop",
+                gate: 0.01,
+                hop_sec: 0.10,
+                window_sec: 0.55,
+                hold_updates: 3,
+                debug: false,
+                debug_every: 2
+            };
+
+            liveState.ws.send(JSON.stringify(cfg));
+        }
+
+        async function startMicStream() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            liveState.mediaStream = stream;
+
+            const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+            const ctx = new AudioContextCtor();
+            liveState.audioCtx = ctx;
+
+            // Ensure running
+            if (ctx.state === "suspended") await ctx.resume();
+
+            const src = ctx.createMediaStreamSource(stream);
+            liveState.srcNode = src;
+
+            liveState.inSampleRate = ctx.sampleRate;
+
+            // ScriptProcessor is deprecated but still widely supported and simplest for embedding.
+            const bufferSize = 4096;
+            const processor = ctx.createScriptProcessor(bufferSize, 1, 1);
+            liveState.processor = processor;
+
+            processor.onaudioprocess = (e) => {
+                if (!isLiveMode) return;
+                if (!liveState.ws || liveState.ws.readyState !== WebSocket.OPEN) return;
+
+                const input = e.inputBuffer.getChannelData(0);
+                const out16k = resampleTo16k(input, liveState.inSampleRate);
+
+                // optional client gate: reduce traffic in silence
+                const rms = computeRms(out16k);
+                if (rms < 0.01 * 0.7) return;
+
+                // send as binary float32 (little-endian)
+                liveState.ws.send(out16k.buffer);
+            };
+
+            // Connect chain (must connect to destination in many browsers to keep processor alive)
+            src.connect(processor);
+            processor.connect(ctx.destination);
+        }
+
+        function computeRms(x) {
+            let s = 0;
+            for (let i = 0; i < x.length; i++) {
+                const v = x[i];
+                s += v * v;
+            }
+            return Math.sqrt(s / Math.max(1, x.length));
+        }
+
+        function resampleTo16k(input, inRate) {
+            const outRate = 16000;
+            if (!inRate || inRate === outRate) {
+                // Copy to fresh Float32Array to avoid referencing WebAudio backing store
+                return new Float32Array(input);
+            }
+            const ratio = inRate / outRate;
+            const outLen = Math.floor(input.length / ratio);
+            const output = new Float32Array(outLen);
+            for (let i = 0; i < outLen; i++) {
+                const idx = i * ratio;
+                const i0 = Math.floor(idx);
+                const i1 = Math.min(i0 + 1, input.length - 1);
+                const frac = idx - i0;
+                output[i] = input[i0] * (1 - frac) + input[i1] * frac;
+            }
+            return output;
+        }
+
+        function handleLiveMessage(msg) {
+            // msg = { t, chord, confidence, key:{top1, top2} }
+            const searchInput = document.getElementById('songSearch');
+
+            const chordStr = (msg && msg.chord) ? msg.chord : null;
+            const conf = (msg && typeof msg.confidence === "number") ? msg.confidence : null;
+
+            let keyTonic = null;
+            let keyMode = null;
+            let keyConf = null;
+
+            if (msg && msg.key && msg.key.top1) {
+                keyTonic = msg.key.top1.tonic || null;
+                keyMode = msg.key.top1.mode || null;
+                keyConf = msg.key.top1.conf ?? null;
+            }
+
+            // Update placeholder with live status without touching layout
+            if (searchInput && isLiveMode) {
+                const chordPart = chordStr ? `${chordStr}${conf !== null ? ` (${Math.round(conf * 100)}%)` : ""}` : "--";
+                const keyPart = keyTonic ? `${keyTonic} ${keyMode || ""}`.trim() + (keyConf !== null ? ` (${Math.round(keyConf * 100)}%)` : "") : "--";
+                searchInput.placeholder = `Live: ${chordPart} | Key: ${keyPart}`;
+            }
+
+            // Rotate wheel to key tonic (debounced)
+            if (keyTonic) {
+                applyDetectedKeyToWheelDebounced(keyTonic, keyMode, keyConf);
+            }
+        }
+
+        function normalizeTonicForUI(tonic) {
+            // German UI uses H instead of B
+            if (!tonic) return tonic;
+            if (tonic === "B") return "H";
+            // map flats if you want: Bb -> A# etc.
+            // try to use existing enharmonicMap if present
+            if (typeof enharmonicMap === "object" && enharmonicMap[tonic]) return enharmonicMap[tonic];
+            return tonic;
+        }
+
+        function applyDetectedKeyToWheelDebounced(tonicRaw, mode, conf) {
+            const tonic = normalizeTonicForUI(tonicRaw);
+
+            // basic confidence gate (avoid jitter early)
+            if (typeof conf === "number" && conf < 0.55) return;
+
+            if (tonic === liveState.lastKeyTonic && mode === liveState.lastKeyMode) {
+                liveState.sameKeyCount += 1;
+            } else {
+                liveState.lastKeyTonic = tonic;
+                liveState.lastKeyMode = mode;
+                liveState.sameKeyCount = 1;
+            }
+
+            // Require 2 consecutive confirmations before turning wheel
+            if (liveState.sameKeyCount < 2) return;
+
+            applyDetectedKeyToWheel(tonic);
+        }
+
+        function applyDetectedKeyToWheel(targetNote) {
+            if (!targetNote || !Array.isArray(notes)) return;
+
+            let targetIndex = notes.indexOf(targetNote);
+            if (targetIndex < 0) return;
+
+            // IMPORTANT: your app uses tonalityToggle.checked as "minor mode"
+            if (tonalityToggle && tonalityToggle.checked) {
+                targetIndex = (targetIndex + 3) % 12;
+            }
+
+            // Set the step (negative because wheel rotates counter-clockwise)
+            currentStep = -targetIndex;
+
+            // Update wheel visually
+            setWheelRotation(currentStep * 30);
+            updateKeyCenter();
+        }
+
     </script>
 </body>
 </html>

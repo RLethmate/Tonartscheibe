@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chord Pro: Triad & 7th Gate</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ccc;
+            font-family: -apple-system, BlinkMacSystemFont, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.96);
+            z-index: 100; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        .display-container {
+            display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; width: 100%;
+        }
+
+        .bass-badge {
+            font-size: 1rem; background: #222; color: #888;
+            padding: 4px 12px; border-radius: 4px; margin-bottom: 10px;
+            border: 1px solid #333; letter-spacing: 1px;
+        }
+        .bass-badge span { color: #fff; font-weight: bold; }
+
+        .chord-text {
+            font-size: 7rem; font-weight: 800; line-height: 1; margin: 0;
+            color: #222; letter-spacing: -2px; transition: color 0.1s;
+            text-align: center; min-height: 1.2em;
+        }
+        
+        .chord-text.major { color: #29b6f6; text-shadow: 0 0 40px rgba(41, 182, 246, 0.4); }
+        .chord-text.minor { color: #ef5350; text-shadow: 0 0 40px rgba(239, 83, 80, 0.4); }
+        .chord-text.dim   { color: #ba68c8; text-shadow: 0 0 40px rgba(186, 104, 200, 0.4); }
+        .chord-text.dom7  { color: #ffca28; text-shadow: 0 0 40px rgba(255, 202, 40, 0.4); }
+
+        .ext { font-size: 0.5em; vertical-align: super; opacity: 0.9; margin-left: 5px; letter-spacing: 0; }
+
+        .chroma-box {
+            display: flex; gap: 4px; height: 110px; background: #111; 
+            padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #222;
+        }
+        .bin-col { display: flex; flex-direction: column; align-items: center; width: 28px; }
+        .bin-bg { width: 100%; height: 100%; background: #1a1a1a; position: relative; border-radius: 2px; }
+        .bin-fill { position: absolute; bottom: 0; width: 100%; background: #444; height: 0%; transition: height 0.05s; }
+        .bin-lbl { margin-top: 5px; font-size: 0.65rem; color: #555; font-weight: bold; }
+
+        /* CONTROLS */
+        .controls { width: 420px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; }
+        .control-group { margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #1a1a1a; }
+        .control-group:last-child { border-bottom: none; margin-bottom: 0; }
+        
+        .slider-header { display: flex; justify-content: space-between; margin-bottom: 4px; color: #eee; font-weight: bold; font-size: 0.85rem; }
+        .slider-desc { font-size: 0.75rem; color: #666; margin-bottom: 6px; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #888; }
+        .val-display { color: #29b6f6; font-family: monospace; }
+
+        .status-leds { display: flex; gap: 15px; margin-bottom: 10px; font-size: 0.7rem; text-transform: uppercase; color: #555;}
+        .led { width: 8px; height: 8px; background: #222; border-radius: 50%; margin-right: 5px; display: inline-block; }
+        .led.on { background: #00e676; box-shadow: 0 0 8px #00e676; }
+    </style>
+</head>
+<body>
+
+    <div id="overlay">
+        <div style="font-size: 3rem; margin-bottom: 15px;">🎹</div>
+        <h2>Triad Priority Mode</h2>
+        <p style="color:#888;">Optimiert für Dreiklänge mit optionalen 7ern</p>
+    </div>
+
+    <div class="display-container">
+        <div class="bass-badge" id="bassDisplay">BASS: <span>--</span></div>
+        <div id="dispChord" class="chord-text">--</div>
+    </div>
+
+    <div class="status-leds">
+        <div><span id="ledSig" class="led"></span> Signal</div>
+        <div id="debugInfo" style="margin-left:auto;">Wait...</div>
+    </div>
+
+    <div class="chroma-box" id="chromaContainer"></div>
+
+    <div class="controls">
+        
+        <div class="control-group">
+            <div class="slider-header">
+                <span>7th Sensitivity (4-Klang Schwelle)</span>
+                <span id="valExt" class="val-display">35%</span>
+            </div>
+            <div class="slider-desc">
+                Wie laut muss die 7 sein, um erkannt zu werden? <br>
+                Höher = Stabiler bei Dreiklängen.
+            </div>
+            <input type="range" id="slExt" min="0" max="80" value="35">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Noise Gate</span>
+                <span id="valGate" class="val-display">Level 14</span>
+            </div>
+            <input type="range" id="slGate" min="0" max="60" value="14">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Sliding Window</span>
+                <span id="valWin" class="val-display">500 ms</span>
+            </div>
+            <input type="range" id="slWin" min="0" max="2000" step="50" value="500">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Harmonic Cleaner</span>
+                <span id="valHarm" class="val-display">100%</span>
+            </div>
+            <input type="range" id="slHarm" min="0" max="150" value="100">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Bass Boost</span>
+                <span id="valBass" class="val-display">1.4x</span>
+            </div>
+            <input type="range" id="slBass" min="10" max="60" value="14">
+        </div>
+    </div>
+
+<script>
+    const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const FFT_SIZE = 8192; 
+
+    let audioCtx, analyser;
+    let freqData;
+    let isRunning = false;
+    
+    // Buffer
+    let chromaBuffer = []; 
+    let displayChroma = new Array(12).fill(0);
+    
+    // --- STANDARD WERTE ---
+    let pGate = 14;      
+    let pWindowMs = 500; 
+    let pHarm = 1.0;    
+    let pBassBoost = 1.4;
+    let pExtThresh = 0.35; // 35% relative Energie nötig für 7er
+
+    // UI Refs
+    const ui = {
+        chord: document.getElementById('dispChord'),
+        bass: document.querySelector('#bassDisplay span'),
+        ledSig: document.getElementById('ledSig'),
+        debug: document.getElementById('debugInfo'),
+        overlay: document.getElementById('overlay'),
+        bars: []
+    };
+
+    const cContainer = document.getElementById('chromaContainer');
+    NOTES.forEach((n, i) => {
+        const d = document.createElement('div');
+        d.className = 'bin-col';
+        d.innerHTML = `<div class="bin-bg"><div class="bin-fill" id="bar-${i}"></div></div><div class="bin-lbl">${n}</div>`;
+        cContainer.appendChild(d);
+        ui.bars.push(d.querySelector('.bin-fill'));
+    });
+
+    // --- CONTROLS EVENTS ---
+    document.getElementById('slExt').oninput = e => {
+        pExtThresh = parseInt(e.target.value) / 100;
+        document.getElementById('valExt').innerText = `${Math.round(pExtThresh*100)}%`;
+    };
+    document.getElementById('slGate').oninput = e => {
+        pGate = parseInt(e.target.value);
+        document.getElementById('valGate').innerText = `Level ${pGate}`;
+    };
+    document.getElementById('slWin').oninput = e => {
+        pWindowMs = parseInt(e.target.value);
+        document.getElementById('valWin').innerText = `${pWindowMs} ms`;
+    };
+    document.getElementById('slHarm').oninput = e => {
+        pHarm = parseInt(e.target.value) / 100;
+        document.getElementById('valHarm').innerText = `${Math.round(pHarm*100)}%`;
+    };
+    document.getElementById('slBass').oninput = e => {
+        pBassBoost = parseInt(e.target.value) / 10;
+        document.getElementById('valBass').innerText = `${pBassBoost.toFixed(1)}x`;
+    };
+
+    ui.overlay.onclick = async () => {
+        ui.overlay.style.display = 'none';
+        await startAudio();
+    };
+
+    async function startAudio() {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false } 
+            });
+
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = FFT_SIZE;
+            analyser.smoothingTimeConstant = 0.0; 
+
+            const src = audioCtx.createMediaStreamSource(stream);
+            const lp = audioCtx.createBiquadFilter();
+            lp.type = "lowpass";
+            lp.frequency.value = 4000;
+
+            src.connect(lp);
+            lp.connect(analyser);
+
+            freqData = new Uint8Array(analyser.frequencyBinCount);
+            isRunning = true;
+            loop();
+        } catch(e) { console.error(e); }
+    }
+
+    function loop() {
+        if(!isRunning) return;
+        requestAnimationFrame(loop);
+
+        analyser.getByteFrequencyData(freqData);
+
+        // 1. SIGNAL CHECK
+        let rms = 0;
+        for(let i=0; i<freqData.length; i++) rms += freqData[i]*freqData[i];
+        rms = Math.sqrt(rms / freqData.length);
+        
+        let isSilence = false;
+        if(rms > pGate) ui.ledSig.classList.add('on');
+        else {
+            ui.ledSig.classList.remove('on');
+            isSilence = true;
+        }
+
+        // 2. RAW ANALYSE
+        const frameChroma = new Array(12).fill(0);
+
+        if (!isSilence) {
+            const binWidth = audioCtx.sampleRate / FFT_SIZE;
+            let peaks = [];
+
+            for(let i=2; i<freqData.length-2; i++) {
+                const val = freqData[i];
+                if(val < pGate) continue; 
+                if(val > freqData[i-1] && val > freqData[i+1]) {
+                    const freq = i * binWidth;
+                    peaks.push({ freq, val });
+                }
+            }
+
+            peaks.forEach(p => {
+                if(p.freq > 3000) return;
+                let energy = p.val;
+                
+                // Harmonic Cleaning
+                const fund = p.freq / 3;
+                let tolerance = (pHarm > 1.0) ? 12 : 7;
+                const hasFund = peaks.find(pk => Math.abs(pk.freq - fund) < tolerance);
+                
+                if(hasFund) {
+                    let removalFactor = Math.min(1.0, pHarm);
+                    energy *= (1.0 - removalFactor);
+                    const fMidi = 12 * Math.log2(hasFund.freq/440) + 69;
+                    const fNote = (Math.round(fMidi)%12 + 12) % 12;
+                    frameChroma[fNote] += p.val * removalFactor; 
+                }
+
+                const midi = 12 * Math.log2(p.freq/440) + 69;
+                const note = (Math.round(midi)%12 + 12) % 12;
+                
+                let mult = 1.0;
+                if(p.freq < 150) mult = pBassBoost;
+                else if(p.freq < 400) mult = 1.2;
+
+                frameChroma[note] += energy * mult;
+            });
+        }
+
+        // 3. SLIDING WINDOW
+        chromaBuffer.push(frameChroma);
+        const targetFrameCount = Math.max(1, Math.round((pWindowMs / 1000) * 60));
+        while(chromaBuffer.length > targetFrameCount) chromaBuffer.shift(); 
+        
+        ui.debug.innerText = `Buf: ${chromaBuffer.length} | Gate: ${Math.round(rms)}`;
+
+        // 4. INTEGRATION
+        const integratedChroma = new Array(12).fill(0);
+        for(let i=0; i < chromaBuffer.length; i++) {
+            const frame = chromaBuffer[i];
+            for(let n=0; n<12; n++) integratedChroma[n] += frame[n];
+        }
+
+        let totalSum = 0;
+        for(let n=0; n<12; n++) {
+            displayChroma[n] = integratedChroma[n] / chromaBuffer.length;
+            totalSum += displayChroma[n];
+        }
+
+        if(totalSum < 10) {
+             updateDisplay(-1, '');
+             drawVisuals(new Array(12).fill(0));
+        } else {
+             detectExtendedChords(displayChroma);
+             drawVisuals(displayChroma);
+        }
+    }
+
+    function detectExtendedChords(chromaVec) {
+        let maxVal = 0;
+        let bassIdx = -1;
+        for(let i=0; i<12; i++) {
+            if(chromaVec[i] > maxVal) { maxVal = chromaVec[i]; bassIdx = i; }
+        }
+        
+        if(bassIdx !== -1 && maxVal > 15) {
+            ui.bass.innerText = NOTES[bassIdx];
+            ui.bass.style.color = "#fff";
+        } else {
+            ui.bass.style.color = "#444";
+        }
+
+        let bestChord = { root: -1, type: '', score: -Infinity };
+
+        for(let r=0; r<12; r++) {
+            const eRoot = chromaVec[r];
+            const eMin3 = chromaVec[(r+3)%12];
+            const eMaj3 = chromaVec[(r+4)%12];
+            const eDim5 = chromaVec[(r+6)%12];
+            const e5    = chromaVec[(r+7)%12];
+            
+            const eDim7 = chromaVec[(r+9)%12];
+            const eMin7 = chromaVec[(r+10)%12];
+            const eMaj7 = chromaVec[(r+11)%12];
+
+            // Basis Scores (Triads)
+            let sMaj = eRoot + e5 + eMaj3 - (eMin3 * 0.8);
+            let sMin = eRoot + e5 + eMin3 - (eMaj3 * 0.8);
+            let sDim = eRoot + eMin3 + eDim5 - (e5 * 1.0);
+
+            if(bassIdx === r) {
+                const boost = 1.3;
+                sMaj *= boost; sMin *= boost; sDim *= boost;
+            }
+
+            // --- 4-KLANG GATE LOGIK ---
+            // Wir prüfen: Ist die Energie der 7er Note groß genug im Vergleich zum Root?
+            // threshold = eRoot * pExtThresh
+            // Beispiel: Root=100, Thresh=0.35 -> 7 muss > 35 sein.
+
+            const threshold = eRoot * pExtThresh;
+
+            // A) MAJOR FAMILY
+            if(sMaj > 20) {
+                // Default: Triad
+                let currentType = 'maj';
+                let currentScore = sMaj;
+
+                // Check Maj7 (Nur wenn über Threshold)
+                if(eMaj7 > threshold) {
+                    const sMaj7 = sMaj + eMaj7;
+                    if(sMaj7 > currentScore) { currentType = 'maj7'; currentScore = sMaj7; }
+                } 
+                // Check Dom7
+                else if(eMin7 > threshold) {
+                    const sDom7 = sMaj + eMin7;
+                    if(sDom7 > currentScore) { currentType = 'dom7'; currentScore = sDom7; }
+                }
+
+                if(currentScore > bestChord.score) bestChord = { root:r, type: currentType, score: currentScore };
+            }
+
+            // B) MINOR FAMILY
+            if(sMin > 20) {
+                let currentType = 'min';
+                let currentScore = sMin;
+
+                // Check Min7
+                if(eMin7 > threshold) {
+                    const sMin7 = sMin + eMin7;
+                    if(sMin7 > currentScore) { currentType = 'min7'; currentScore = sMin7; }
+                }
+
+                if(currentScore > bestChord.score) bestChord = { root:r, type: currentType, score: currentScore };
+            }
+
+            // C) DIMINISHED FAMILY
+            if(sDim > 20) {
+                let currentType = 'dim';
+                let currentScore = sDim;
+
+                // Check Dim7
+                if(eDim7 > threshold) {
+                    const sDim7 = sDim + eDim7;
+                    if(sDim7 > currentScore) { currentType = 'dim7'; currentScore = sDim7; }
+                }
+
+                if(currentScore > bestChord.score) bestChord = { root:r, type: currentType, score: currentScore };
+            }
+        }
+
+        if(bestChord.score > 40) {
+            updateDisplay(bestChord.root, bestChord.type);
+        } else {
+            ui.chord.innerText = "--";
+            ui.chord.className = "chord-text";
+        }
+    }
+
+    function updateDisplay(root, type) {
+        if(root === -1) return;
+
+        let base = NOTES[root];
+        let extHTML = "";
+        let className = "chord-text";
+
+        switch(type) {
+            case 'maj':
+                className += " major";
+                break;
+            case 'min':
+                base += "m";
+                className += " minor";
+                break;
+            case 'maj7':
+                extHTML = `<span class="ext">maj7</span>`;
+                className += " major";
+                break;
+            case 'dom7':
+                extHTML = `<span class="ext">7</span>`;
+                className += " dom7";
+                break;
+            case 'min7':
+                base += "m";
+                extHTML = `<span class="ext">7</span>`;
+                className += " minor";
+                break;
+            case 'dim':
+                base += "dim";
+                className += " dim";
+                break;
+            case 'dim7':
+                base += "dim";
+                extHTML = `<span class="ext">7</span>`;
+                className += " dim";
+                break;
+        }
+        
+        ui.chord.innerHTML = base + extHTML;
+        ui.chord.className = className;
+    }
+
+    function drawVisuals(vec) {
+        let max = 1;
+        for(let v of vec) if(v > max) max = v;
+        
+        ui.bars.forEach((b, i) => {
+            const h = (vec[i] / max) * 100;
+            b.style.height = Math.min(100, h) + "%";
+            b.style.backgroundColor = (vec[i] > max*0.7) ? "#fff" : "#555";
+        });
+    }
+
+</script>
+</body>
+</html>

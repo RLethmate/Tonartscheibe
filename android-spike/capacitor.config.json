@@ -1,0 +1,8 @@
+{
+  "appId": "de.improscheibe.micspike",
+  "appName": "Improscheibe Mic-Spike",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

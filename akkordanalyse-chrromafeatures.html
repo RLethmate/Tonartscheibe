@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Chord Detector + Gate</title>
+    <style>
+        body {
+            background-color: #050505;
+            color: #ccc;
+            font-family: -apple-system, BlinkMacSystemFont, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.96);
+            z-index: 100; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        .display-container {
+            display: flex; flex-direction: column; align-items: center; margin-bottom: 20px;
+        }
+
+        .bass-badge {
+            font-size: 1rem; background: #222; color: #888;
+            padding: 4px 12px; border-radius: 4px; margin-bottom: 5px;
+            border: 1px solid #333; letter-spacing: 1px;
+        }
+        .bass-badge span { color: #fff; font-weight: bold; }
+
+        .chord-text {
+            font-size: 8rem; font-weight: 800; line-height: 1; margin: 0;
+            color: #222; letter-spacing: -4px; transition: color 0.1s;
+        }
+        .chord-text.major { color: #29b6f6; text-shadow: 0 0 50px rgba(41, 182, 246, 0.4); }
+        .chord-text.minor { color: #ef5350; text-shadow: 0 0 50px rgba(239, 83, 80, 0.4); }
+
+        /* VISUALS */
+        .chroma-box {
+            display: flex; gap: 4px; height: 120px; background: #111; 
+            padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #222;
+        }
+        .bin-col { display: flex; flex-direction: column; align-items: center; width: 28px; }
+        .bin-bg { width: 100%; height: 100%; background: #1a1a1a; position: relative; border-radius: 2px; }
+        .bin-fill { position: absolute; bottom: 0; width: 100%; background: #444; height: 0%; transition: height 0.05s; }
+        .bin-lbl { margin-top: 5px; font-size: 0.65rem; color: #555; font-weight: bold; }
+
+        /* CONTROLS */
+        .controls { width: 400px; background: #111; padding: 20px; border-radius: 12px; border: 1px solid #222; }
+        .control-group { margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #1a1a1a; }
+        .control-group:last-child { border-bottom: none; margin-bottom: 0; }
+        
+        .slider-header { display: flex; justify-content: space-between; margin-bottom: 4px; color: #eee; font-weight: bold; font-size: 0.85rem; }
+        .slider-desc { font-size: 0.75rem; color: #666; margin-bottom: 6px; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: #888; }
+        .val-display { color: #29b6f6; font-family: monospace; }
+
+        .status-leds { display: flex; gap: 15px; margin-bottom: 10px; font-size: 0.7rem; text-transform: uppercase; color: #555;}
+        .led { width: 8px; height: 8px; background: #222; border-radius: 50%; margin-right: 5px; display: inline-block; }
+        .led.on { background: #00e676; box-shadow: 0 0 8px #00e676; }
+        .led.gate { background: #ff1744; box-shadow: 0 0 8px #ff1744; } /* Rote LED für Gate Closed */
+    </style>
+</head>
+<body>
+
+    <div id="overlay">
+        <div style="font-size: 3rem; margin-bottom: 15px;">🛡️</div>
+        <h2>Gate & Window Mode</h2>
+        <p style="color:#888;">Bitte Mikrofon freigeben</p>
+    </div>
+
+    <div class="display-container">
+        <div class="bass-badge" id="bassDisplay">BASS: <span>--</span></div>
+        <div id="dispChord" class="chord-text">--</div>
+    </div>
+
+    <div class="status-leds">
+        <div><span id="ledSig" class="led"></span> Signal</div>
+        <div><span id="ledGate" class="led"></span> Noise Gate</div>
+        <div id="debugInfo" style="margin-left:auto;">Wait...</div>
+    </div>
+
+    <div class="chroma-box" id="chromaContainer"></div>
+
+    <div class="controls">
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Noise Gate (Threshold)</span>
+                <span id="valGate" class="val-display">Level 25</span>
+            </div>
+            <div class="slider-desc">
+                Filtert leise Geräusche aus. <br>
+                Links: Alles wird analysiert. Rechts: Nur laute Töne.
+            </div>
+            <input type="range" id="slGate" min="0" max="60" value="25">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Sliding Window (Gedächtnis)</span>
+                <span id="valWin" class="val-display">150 ms</span>
+            </div>
+            <div class="slider-desc">
+                Glättet die Analyse über Zeit. <br>
+                Kurz = Reaktionsschnell. Lang = Stabil.
+            </div>
+            <input type="range" id="slWin" min="0" max="500" step="10" value="150">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Harmonic Cleaner</span>
+                <span id="valHarm" class="val-display">70%</span>
+            </div>
+            <div class="slider-desc">Entfernt Obertöne (Fix für G-Saite wird D).</div>
+            <input type="range" id="slHarm" min="0" max="100" value="70">
+        </div>
+
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Bass Boost</span>
+                <span id="valBass" class="val-display">3.0x</span>
+            </div>
+             <div class="slider-desc">Gewichtet tiefe Töne stärker.</div>
+            <input type="range" id="slBass" min="10" max="60" value="30">
+        </div>
+    </div>
+
+<script>
+    const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const FFT_SIZE = 8192; 
+
+    let audioCtx, analyser;
+    let freqData;
+    let isRunning = false;
+    
+    // Buffer
+    let chromaBuffer = []; 
+    let displayChroma = new Array(12).fill(0);
+    
+    // Params
+    let pGate = 25;      // Threshold für Gate
+    let pWindowMs = 150; // Zeitfenster
+    let pHarm = 0.7;     // Harmonic Suppression
+    let pBassBoost = 3.0;// Bass Gewichtung
+
+    // UI Refs
+    const ui = {
+        chord: document.getElementById('dispChord'),
+        bass: document.querySelector('#bassDisplay span'),
+        ledSig: document.getElementById('ledSig'),
+        ledGate: document.getElementById('ledGate'),
+        debug: document.getElementById('debugInfo'),
+        overlay: document.getElementById('overlay'),
+        bars: []
+    };
+
+    const cContainer = document.getElementById('chromaContainer');
+    NOTES.forEach((n, i) => {
+        const d = document.createElement('div');
+        d.className = 'bin-col';
+        d.innerHTML = `<div class="bin-bg"><div class="bin-fill" id="bar-${i}"></div></div><div class="bin-lbl">${n}</div>`;
+        cContainer.appendChild(d);
+        ui.bars.push(d.querySelector('.bin-fill'));
+    });
+
+    // --- CONTROLS EVENTS ---
+    document.getElementById('slGate').oninput = e => {
+        pGate = parseInt(e.target.value);
+        document.getElementById('valGate').innerText = `Level ${pGate}`;
+    };
+    document.getElementById('slWin').oninput = e => {
+        pWindowMs = parseInt(e.target.value);
+        document.getElementById('valWin').innerText = `${pWindowMs} ms`;
+    };
+    document.getElementById('slHarm').oninput = e => {
+        pHarm = parseInt(e.target.value) / 100;
+        document.getElementById('valHarm').innerText = `${Math.round(pHarm*100)}%`;
+    };
+    document.getElementById('slBass').oninput = e => {
+        pBassBoost = parseInt(e.target.value) / 10;
+        document.getElementById('valBass').innerText = `${pBassBoost.toFixed(1)}x`;
+    };
+
+    ui.overlay.onclick = async () => {
+        ui.overlay.style.display = 'none';
+        await startAudio();
+    };
+
+    async function startAudio() {
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: { echoCancellation: false, noiseSuppression: true, autoGainControl: false } 
+            });
+
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = FFT_SIZE;
+            analyser.smoothingTimeConstant = 0.0; 
+
+            const src = audioCtx.createMediaStreamSource(stream);
+            // LowPass gegen Zischen
+            const lp = audioCtx.createBiquadFilter();
+            lp.type = "lowpass";
+            lp.frequency.value = 3000;
+
+            src.connect(lp);
+            lp.connect(analyser);
+
+            freqData = new Uint8Array(analyser.frequencyBinCount);
+            isRunning = true;
+            loop();
+        } catch(e) { console.error(e); }
+    }
+
+    function loop() {
+        if(!isRunning) return;
+        requestAnimationFrame(loop);
+
+        analyser.getByteFrequencyData(freqData);
+
+        // --- 1. NOISE GATE CHECK ---
+        let rms = 0;
+        for(let i=0; i<freqData.length; i++) rms += freqData[i]*freqData[i];
+        rms = Math.sqrt(rms / freqData.length);
+        
+        let isSilence = false;
+        
+        // Anzeige Status LEDs
+        if(rms > pGate) {
+            ui.ledSig.classList.add('on');       // Grünes Licht an
+            ui.ledGate.classList.remove('gate'); // Rotes Licht aus
+        } else {
+            ui.ledSig.classList.remove('on');    // Grünes Licht aus
+            ui.ledGate.classList.add('gate');    // Rotes Licht an (Gate Closed)
+            isSilence = true;
+        }
+
+        // --- 2. ANALYSE (Nur wenn Signal da ist) ---
+        const frameChroma = new Array(12).fill(0);
+
+        if (!isSilence) {
+            const binWidth = audioCtx.sampleRate / FFT_SIZE;
+            let peaks = [];
+
+            // Peak Picking
+            for(let i=2; i<freqData.length-2; i++) {
+                const val = freqData[i];
+                if(val < pGate) continue; // Noise Floor innerhalb des Signals
+                
+                if(val > freqData[i-1] && val > freqData[i+1]) {
+                    const freq = i * binWidth;
+                    peaks.push({ freq, val });
+                }
+            }
+
+            // Harmonic Cleaning
+            peaks.forEach(p => {
+                if(p.freq > 2500) return;
+                let energy = p.val;
+                
+                // Anti-Oberton
+                const fund = p.freq / 3;
+                const hasFund = peaks.find(pk => Math.abs(pk.freq - fund) < 7);
+                if(hasFund) {
+                    energy *= (1.0 - pHarm); 
+                    const fMidi = 12 * Math.log2(hasFund.freq/440) + 69;
+                    const fNote = (Math.round(fMidi)%12 + 12) % 12;
+                    frameChroma[fNote] += p.val * pHarm; 
+                }
+
+                const midi = 12 * Math.log2(p.freq/440) + 69;
+                const note = (Math.round(midi)%12 + 12) % 12;
+                
+                // Bass Boost
+                let mult = 1.0;
+                if(p.freq < 150) mult = pBassBoost;
+                else if(p.freq < 400) mult = 1.5;
+
+                frameChroma[note] += energy * mult;
+            });
+        } 
+        // WENN SILENCE: frameChroma bleibt komplett [0,0,0...]. 
+        // Das sorgt dafür, dass der Sliding Average langsam gegen Null geht.
+
+        // --- 3. SLIDING WINDOW LOGIC ---
+        chromaBuffer.push(frameChroma);
+
+        // Buffer Größe anpassen
+        const targetFrameCount = Math.max(1, Math.round((pWindowMs / 1000) * 60));
+        while(chromaBuffer.length > targetFrameCount) {
+            chromaBuffer.shift(); 
+        }
+        
+        ui.debug.innerText = `Buf: ${chromaBuffer.length} | RMS: ${Math.round(rms)}`;
+
+        // --- 4. INTEGRATION ---
+        const integratedChroma = new Array(12).fill(0);
+        for(let i=0; i < chromaBuffer.length; i++) {
+            const frame = chromaBuffer[i];
+            for(let n=0; n<12; n++) integratedChroma[n] += frame[n];
+        }
+
+        // Durchschnitt berechnen
+        let totalEnergy = 0;
+        for(let n=0; n<12; n++) {
+            displayChroma[n] = integratedChroma[n] / chromaBuffer.length;
+            totalEnergy += displayChroma[n];
+        }
+
+        // --- 5. DETEKTION ---
+        // Wenn die durchschnittliche Energie zu niedrig ist (weil Gate zu war), zeigen wir "--"
+        if (totalEnergy < 5) { // Threshold für "Integrierte Stille"
+             updateDisplay(-1, '');
+             drawVisuals(new Array(12).fill(0));
+        } else {
+             detectFromIntegrated(displayChroma);
+             drawVisuals(displayChroma);
+        }
+    }
+
+    function detectFromIntegrated(chromaVec) {
+        // Bass Detection
+        let maxVal = 0;
+        let bassIdx = -1;
+        for(let i=0; i<12; i++) {
+            if(chromaVec[i] > maxVal) { maxVal = chromaVec[i]; bassIdx = i; }
+        }
+        
+        if(bassIdx !== -1 && maxVal > 15) {
+            ui.bass.innerText = NOTES[bassIdx];
+            ui.bass.style.color = "#fff";
+        } else {
+            ui.bass.style.color = "#444";
+        }
+
+        // Chord Score
+        let maxScore = -Infinity;
+        let best = { r: -1, t: '' };
+
+        for(let r=0; r<12; r++) {
+            const i5 = (r+7)%12;
+            const i3Maj = (r+4)%12;
+            const i3Min = (r+3)%12;
+            const iAntiMaj = i3Min;
+            const iAntiMin = i3Maj;
+
+            const eRoot = chromaVec[r];
+            const e5 = chromaVec[i5];
+            const e3Maj = chromaVec[i3Maj];
+            const e3Min = chromaVec[i3Min];
+            const eAntiMaj = chromaVec[iAntiMaj];
+            const eAntiMin = chromaVec[iAntiMin];
+
+            // Score Formel
+            let sMaj = eRoot + (e5*0.7) + (e3Maj*0.8) - (eAntiMaj*0.5);
+            let sMin = eRoot + (e5*0.7) + (e3Min*0.8) - (eAntiMin*0.5);
+            
+            if(bassIdx === r) { sMaj *= 1.3; sMin *= 1.3; }
+
+            if(sMaj > maxScore) { maxScore = sMaj; best = {r:r, t:'maj'}; }
+            if(sMin > maxScore) { maxScore = sMin; best = {r:r, t:'min'}; }
+        }
+
+        updateDisplay(best.r, best.t);
+    }
+
+    function updateDisplay(root, type) {
+        if (root === -1) {
+            ui.chord.innerText = "--";
+            ui.chord.style.color = "#222";
+            return;
+        }
+
+        let txt = NOTES[root];
+        if(type === 'min') txt += "m";
+        
+        ui.chord.innerText = txt;
+        ui.chord.className = (type === 'maj') ? "chord-text major" : "chord-text minor";
+        ui.chord.style.color = ""; 
+    }
+
+    function drawVisuals(vec) {
+        let max = 1;
+        for(let v of vec) if(v > max) max = v;
+        
+        ui.bars.forEach((b, i) => {
+            const h = (vec[i] / max) * 100;
+            b.style.height = Math.min(100, h) + "%";
+            b.style.backgroundColor = (vec[i] > max*0.8) ? "#fff" : "#555";
+        });
+    }
+
+</script>
+</body>
+</html>

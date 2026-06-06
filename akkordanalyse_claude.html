@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chord Detector: Fixed & Complete</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+            color: #ccc; font-family: -apple-system, monospace;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 100vh; margin: 0; padding: 20px;
+        }
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.97); z-index: 100; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .chord-text {
+            font-size: 8rem; font-weight: 900; color: #222;
+            transition: all 0.15s; text-align: center;
+        }
+        .chord-text.major { color: #29b6f6; text-shadow: 0 0 60px rgba(41,182,246,0.6); }
+        .chord-text.minor { color: #ef5350; text-shadow: 0 0 60px rgba(239,83,80,0.6); }
+        .chord-text.dim { color: #ba68c8; }
+        .chord-text.dom7 { color: #ffca28; }
+        .ext { font-size: 0.45em; vertical-align: super; margin-left: 8px; }
+        .controls { 
+            width: 500px; background: #0f0f1e; padding: 25px;
+            border-radius: 16px; border: 2px solid #1a1a3e; margin-top: 20px;
+        }
+        .control-group { margin-bottom: 15px; }
+        .slider-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        input[type=range] { width: 100%; }
+        .chroma-box { display: flex; gap: 6px; height: 100px; margin: 20px 0; }
+        .bin-col { width: 30px; }
+        .bin-bg { height: 100%; background: #1a1a2e; position: relative; }
+        .bin-fill { position: absolute; bottom: 0; width: 100%; background: #666; height: 0%; }
+        .metrics { display: flex; gap: 15px; margin: 15px 0; font-size: 0.85rem; }
+        .metric { background: #1a1a1a; padding: 8px 16px; border-radius: 6px; }
+        .led { width: 10px; height: 10px; background: #1a1a1a; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .led.on { background: #00e676; box-shadow: 0 0 12px #00e676; }
+    </style>
+</head>
+<body>
+    <div id="overlay" onclick="startAudio()">
+        <h1 style="color:#29b6f6;">🎹 Chord Detector</h1>
+        <p style="color:#888;">Klick zum Starten</p>
+    </div>
+
+    <div class="metrics">
+        <div class="metric">Bass: <span id="bass">--</span></div>
+        <div class="metric">Confidence: <span id="conf">--</span>%</div>
+        <div class="metric"><span id="ledSig" class="led"></span>Signal</div>
+    </div>
+
+    <div id="chord" class="chord-text">--</div>
+
+    <div class="chroma-box" id="chromaBox"></div>
+
+    <div class="controls">
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Noise Gate</span>
+                <span id="valGate">20</span>
+            </div>
+            <input type="range" id="slGate" min="5" max="60" value="20" oninput="updateParam()">
+        </div>
+        <div class="control-group">
+            <div class="slider-header">
+                <span>7th Sensitivity</span>
+                <span id="valExt">35%</span>
+            </div>
+            <input type="range" id="slExt" min="15" max="80" value="35" oninput="updateParam()">
+        </div>
+        <div class="control-group">
+            <div class="slider-header">
+                <span>Smoothing</span>
+                <span id="valWin">600ms</span>
+            </div>
+            <input type="range" id="slWin" min="100" max="2000" step="50" value="600" oninput="updateParam()">
+        </div>
+    </div>
+
+<script>
+const NOTES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+let ctx, analyser, freqData, isRunning = false;
+let chromaBuffer = [], detectedBass = -1, silentFrames = 0;
+let pGate = 20, pExtThresh = 0.35, pWindow = 600;
+
+const ui = {
+    chord: document.getElementById('chord'),
+    bass: document.getElementById('bass'),
+    conf: document.getElementById('conf'),
+    ledSig: document.getElementById('ledSig'),
+    bars: []
+};
+
+const box = document.getElementById('chromaBox');
+for(let i=0; i<12; i++) {
+    const col = document.createElement('div');
+    col.className = 'bin-col';
+    col.innerHTML = `<div class="bin-bg"><div class="bin-fill"></div></div>`;
+    box.appendChild(col);
+    ui.bars.push(col.querySelector('.bin-fill'));
+}
+
+function updateParam() {
+    pGate = parseInt(document.getElementById('slGate').value);
+    pExtThresh = parseInt(document.getElementById('slExt').value) / 100;
+    pWindow = parseInt(document.getElementById('slWin').value);
+    document.getElementById('valGate').innerText = pGate;
+    document.getElementById('valExt').innerText = Math.round(pExtThresh*100) + '%';
+    document.getElementById('valWin').innerText = pWindow + 'ms';
+}
+
+async function startAudio() {
+    document.getElementById('overlay').style.display = 'none';
+    try {
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+        const src = ctx.createMediaStreamSource(stream);
+        
+        analyser = ctx.createAnalyser();
+        analyser.fftSize = 8192;
+        analyser.smoothingTimeConstant = 0;
+        
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.value = 4000;
+        
+        src.connect(lp);
+        lp.connect(analyser);
+        
+        freqData = new Uint8Array(analyser.frequencyBinCount);
+        isRunning = true;
+        loop();
+    } catch(e) {
+        alert('Mikrofon-Fehler: ' + e.message);
+    }
+}
+
+function loop() {
+    if(!isRunning) return;
+    requestAnimationFrame(loop);
+    
+    analyser.getByteFrequencyData(freqData);
+    
+    let rms = 0;
+    for(let i=0; i<freqData.length; i++) rms += freqData[i]*freqData[i];
+    rms = Math.sqrt(rms / freqData.length);
+    
+    ui.ledSig.classList.toggle('on', rms > pGate);
+    
+    if(rms < pGate) {
+        silentFrames++;
+        if(silentFrames > 10) {
+            chromaBuffer = [];
+            ui.chord.innerText = '--';
+            ui.chord.className = 'chord-text';
+            ui.bass.innerText = '--';
+            ui.conf.innerText = '--';
+            drawBars(new Array(12).fill(0));
+        }
+        return;
+    }
+    
+    silentFrames = 0;
+    
+    const chroma = extractChroma();
+    detectedBass = findBass();
+    
+    chromaBuffer.push(chroma);
+    const frames = Math.max(2, Math.round((pWindow/1000)*60));
+    while(chromaBuffer.length > frames) chromaBuffer.shift();
+    
+    const integrated = integrate(chromaBuffer);
+    const result = detectChord(integrated, detectedBass);
+    
+    if(result.chord) {
+        displayChord(result);
+        ui.bass.innerText = NOTES[result.root];
+        ui.conf.innerText = result.conf;
+    } else {
+        ui.chord.innerText = '--';
+        ui.conf.innerText = '0';
+    }
+    
+    drawBars(integrated);
+}
+
+function extractChroma() {
+    const chroma = new Array(12).fill(0);
+    const binW = ctx.sampleRate / 8192;
+    
+    for(let i=2; i<freqData.length-2; i++) {
+        const val = freqData[i];
+        if(val < pGate) continue;
+        if(val > freqData[i-1] && val > freqData[i+1]) {
+            const freq = i * binW;
+            if(freq < 40 || freq > 4000) continue;
+            
+            const midi = 12 * Math.log2(freq/440) + 69;
+            const note = (Math.round(midi) % 12 + 12) % 12;
+            
+            let boost = 1.0;
+            if(freq < 150) boost = 2.0;
+            else if(freq < 300) boost = 1.5;
+            
+            chroma[note] += val * boost;
+        }
+    }
+    return chroma;
+}
+
+function findBass() {
+    const binW = ctx.sampleRate / 8192;
+    const minBin = Math.floor(40 / binW);
+    const maxBin = Math.ceil(180 / binW);
+    
+    let peak = 0, peakIdx = -1;
+    for(let i=minBin; i<maxBin && i<freqData.length; i++) {
+        if(freqData[i] > peak) {
+            peak = freqData[i];
+            peakIdx = i;
+        }
+    }
+    
+    if(peak < pGate*2) return -1;
+    
+    const freq = peakIdx * binW;
+    const midi = 12 * Math.log2(freq/440) + 69;
+    return (Math.round(midi) % 12 + 12) % 12;
+}
+
+function integrate(buffer) {
+    if(buffer.length === 0) return new Array(12).fill(0);
+    const sum = new Array(12).fill(0);
+    for(const frame of buffer) {
+        for(let n=0; n<12; n++) sum[n] += frame[n];
+    }
+    for(let n=0; n<12; n++) sum[n] /= buffer.length;
+    return sum;
+}
+
+function detectChord(chroma, bass) {
+    let total = 0;
+    for(let v of chroma) total += v;
+    if(total < 10) return {chord: false};
+    
+    let best = {root: -1, type: '', score: -1, conf: 0};
+    
+    for(let r=0; r<12; r++) {
+        const eRoot = chroma[r];
+        if(eRoot < 5) continue;
+        
+        const e3m = chroma[(r+3)%12];
+        const e3M = chroma[(r+4)%12];
+        const e5 = chroma[(r+7)%12];
+        const e7m = chroma[(r+10)%12];
+        const e7M = chroma[(r+11)%12];
+        
+        let sMaj = eRoot + e5 + e3M - e3m*0.8;
+        let sMin = eRoot + e5 + e3m - e3M*0.8;
+        
+        if(bass !== -1 && bass !== r) {
+            sMaj /= 2.5;
+            sMin /= 2.5;
+        } else if(bass === r) {
+            sMaj *= 1.4;
+            sMin *= 1.4;
+        }
+        
+        const thresh = eRoot * pExtThresh;
+        
+        if(sMaj > 20) {
+            let type = 'maj', score = sMaj;
+            if(e7M > thresh) { type = 'maj7'; score += e7M*1.2; }
+            else if(e7m > thresh) { type = 'dom7'; score += e7m*1.2; }
+            
+            if(score > best.score) {
+                best = {root:r, type, score, conf: Math.min(100, Math.round(score/2))};
+            }
+        }
+        
+        if(sMin > 20) {
+            let type = 'min', score = sMin;
+            if(e7m > thresh) { type = 'min7'; score += e7m*1.2; }
+            
+            if(score > best.score) {
+                best = {root:r, type, score, conf: Math.min(100, Math.round(score/2))};
+            }
+        }
+    }
+    
+    return best.score > 40 ? {chord: true, ...best} : {chord: false};
+}
+
+function displayChord(result) {
+    let base = NOTES[result.root];
+    let ext = '';
+    let cls = 'chord-text ';
+    
+    switch(result.type) {
+        case 'maj': cls += 'major'; break;
+        case 'min': base += 'm'; cls += 'minor'; break;
+        case 'maj7': ext = '<span class="ext">maj7</span>'; cls += 'major'; break;
+        case 'dom7': ext = '<span class="ext">7</span>'; cls += 'dom7'; break;
+        case 'min7': base += 'm'; ext = '<span class="ext">7</span>'; cls += 'minor'; break;
+    }
+    
+    ui.chord.innerHTML = base + ext;
+    ui.chord.className = cls;
+}
+
+function drawBars(chroma) {
+    let max = Math.max(...chroma, 1);
+    ui.bars.forEach((bar, i) => {
+        const h = (chroma[i] / max) * 100;
+        bar.style.height = h + '%';
+        bar.style.background = chroma[i] > max*0.7 ? '#29b6f6' : '#666';
+    });
+}
+</script>
+</body>
+</html>
