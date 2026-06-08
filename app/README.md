@@ -33,7 +33,7 @@ Risiko vermutet hatte, bringt das Framework von Haus aus mit.
 
 ## Build & Test
 
-Im Ordner `android-spike/`:
+Im Ordner `app/`:
 
 ```bash
 # 1) Web-Inhalt zum nativen Projekt synchronisieren

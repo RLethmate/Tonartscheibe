@@ -1,5 +1,5 @@
 {
-  "name": "improscheibe-android-spike",
+  "name": "improscheibe-app",
   "version": "0.0.1",
   "private": true,
   "description": "Spike: Mikrofonzugriff (getUserMedia/AudioContext) in einer Android-WebView via Capacitor testen",

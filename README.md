@@ -18,7 +18,7 @@ Ein interaktives Lernwerkzeug für Harmonielehre: Die Tonartscheibe zeigt die 7 
 
 | Verzeichnis | Beschreibung |
 |---|---|
-| `android-spike/` | **Das ist die aktuelle App.** Capacitor-Wrapper um `android-spike/www/index.html`. Enthält die vollständige Harmony Wheel App mit Live-Akkorderkennung via WebSocket→FastAPI/crema, Spotlight-Tutorial, Spannungs-Arpeggierung und Prognose-Funktion. Buildanleitung: siehe `android-spike/README.md` |
+| `app/` | **Das ist die aktuelle App.** Capacitor-Wrapper um `app/www/index.html`. Enthält die vollständige Harmony Wheel App mit Live-Akkorderkennung via WebSocket→FastAPI/crema, Spotlight-Tutorial, Spannungs-Arpeggierung und Prognose-Funktion. Buildanleitung: siehe `app/README.md` |
 
 ### Prototypen: Browser-seitige Akkordanalyse
 
@@ -36,7 +36,7 @@ Diese Dateien sind **Experimente mit rein browser-seitiger DSP** (kein ML-Backen
 
 ### Symbol-Grafiken
 
-Die `.png`-Dateien im Projektstamm und in `android-spike/www/` sind Metaphern-Icons für die Akkord-Funktionen auf der Scheibe:
+Die `.png`-Dateien im Projektstamm und in `app/www/` sind Metaphern-Icons für die Akkord-Funktionen auf der Scheibe:
 
 | Datei | Akkord-Stufe | Bedeutung |
 |---|---|---|
@@ -79,7 +79,7 @@ lsof -ti:8002 | xargs kill -9 2>/dev/null
 
 ```
 Android-App (Capacitor WebView)
-    └── android-spike/www/index.html
+    └── app/www/index.html
             │
             │  WebSocket ws://SERVER:8002/ws
             ▼
