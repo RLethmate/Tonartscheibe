@@ -3,6 +3,6 @@
   "appName": "Improscheibe Mic-Spike",
   "webDir": "www",
   "android": {
-    "allowMixedContent": false
+    "allowMixedContent": true
   }
 }
